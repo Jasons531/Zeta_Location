@@ -3,20 +3,33 @@
 
 #include "stm32l0xx_hal.h"
 
-#define DEV_ADDR					0x0801ffe0			//设备ID存储地址
-#define DEV_ADDR_SIZE			0x12				//设备ID占用存储空间
+#define DEV_ADDR											0x0801ffe0			//设备ID存储地址
+#define DEV_ADDR_SIZE									0x12				//设备ID占用存储空间
 
-#define SLEEP_ADDR				0x0801ffc0			//休眠时间存储地址 
-#define SLEEP_ADDR_SIZE		0x04				//休眠时间占用存储空间
+#define SLEEP_ADDR										0x0801ffc0			//休眠时间存储地址 
+#define SLEEP_ADDR_SIZE								0x04				//休眠时间占用存储空间
 
-#define MAXLEN_ADDR				0x0801ffbc			//Zeta数据长度存储地址
-#define MAXLEN_ADDR_SIZE	0x01				//Zeta数据长度占用存储空间
+#define MAXLEN_ADDR										0x0801ffbc			//Zeta数据长度存储地址
+#define MAXLEN_ADDR_SIZE							0x01				//Zeta数据长度占用存储空间
 
-#define AQUATIC_MODE_ADDR 0x0801ffb8   //水产工作模式选择
-#define AQUATIC_MODE_SIZE	0x01				
+#define AQUATIC_MODE_ADDR 						0x0801ffb8   //水产工作模式选择
+#define AQUATIC_MODE_SIZE							0x01				
 
-#define FLAG_ADD					0x0801fd10			//备份寄存器的代替位置，用于记录各种标识位
-#define	FLAG_ADD_SIZE			0x10
+#define	HEART_CYCLE_ADDR							0x0801ffb4	///心跳地址
+
+#define	ALARM_CYCLE_ADDR							0x0801ffb0	///报警地址
+
+#define	GPS_LOCA_TIME_ADDR						0x0801ffac	///GPS定位超时时间
+
+#define	MOVE_CONDITION_ADDR						0x0801ffa8	///移动条件
+
+#define MOVE_STOP_CONDITION_ADDR			0x0801ffa4	///移动停止条件
+
+#define MOVE_ENABLE_ADDR							0x0801ffa0	///移动使能条件
+
+
+#define FLAG_ADD											0x0801fd10			//备份寄存器的代替位置，用于记录各种标识位
+#define	FLAG_ADD_SIZE									0x10
 
 
 #define FLAG	FlashRead32(FLAG_ADD)		

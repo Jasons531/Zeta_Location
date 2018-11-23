@@ -36,32 +36,31 @@ extern RTC_HandleTypeDef 				RtcHandle;
 int main(void)
 {			
    BoardInitClock(  );
+   
+   LocationInit(  );
+
+   UserReadFlash(  );
 	
 	 UserKeyWakeupInit(  );
 	
-	 DEBUG(2,"TIME : %s  DATE : %s\r\n",__TIME__, __DATE__); 
-		
-	 UserReadFlash(  );
+	 DEBUG(2,"TIME : %s  DATE : %s\r\n",__TIME__, __DATE__); 	 
 	
-	 UserWakeupHandle(  );
-	
-	 LocationInit(  );
+	 UserKeyWakeupHandle(  );	
 	
 //	 UserCheckGps(  );
 							 	 						
-//	 UserCheckCmd(&UserZetaCheck[MAC]);
+	 UserCheckCmd(&UserZetaCheck[MAC]);
 
-//	 UserCheckCmd(&UserZetaCheck[COUNTER]);
-//	
-//	 UserCheckCmd(&UserZetaCheck[RSSI]);
-
-//	 UserSetHeart(0x01);
+	 UserCheckCmd(&UserZetaCheck[COUNTER]);
 	
+	 UserCheckCmd(&UserZetaCheck[RSSI]);
+
+	 UserSetHeart(0x01);
 	 
 		while (1)
    {	
-//		 UserSendTest(  ); 
-//		 HAL_Delay(30000);
+		 UserSendTest(  ); 
+		 HAL_Delay(30000);
 		 
 
 //		 HAL_Delay(5000);

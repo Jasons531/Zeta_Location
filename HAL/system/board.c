@@ -52,18 +52,18 @@ void BoardInitClock( void )
 
 void BoardInitMcu( void )
 {							
+	MMA845xInit(  );
+	
 	/****************ADC初始化*******************/
 	MX_ADC_Init(  );
-				
-	MX_I2C2_Init(  );
 	
 	/*******************开启RTC中断*******************/
 	HAL_NVIC_SetPriority(RTC_IRQn, 4, 0);
 	HAL_NVIC_EnableIRQ(RTC_IRQn);
 						
-//	ZetaHandle.Init(  );
-//	
-//	ZetaHandle.PowerOn(  );
+	ZetaHandle.Init(  );
+	
+	ZetaHandle.PowerOn(  );
 }
 
 /*

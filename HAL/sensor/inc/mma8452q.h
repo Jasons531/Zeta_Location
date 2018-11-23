@@ -720,7 +720,7 @@ void IIC_RegWrite(uint16_t address, uint8_t reg, uint8_t data);
 
 void MMA845xInit(void);
 
-void MMA8452WakeupInit(void);
+void MMA8452InterruptPinInit(void);
 
 void MMA845xStandby(void);
 
@@ -735,8 +735,6 @@ void MMA845xSetPassFilter(uint8_t Filtered);
 void MMA8452MultipleRead(void);
 
 void MMA845xCorrectReg(void);
-
-void MMA845xMTCount(uint8_t Count);
 
 void MMA845xEnterActiveG(uint8_t FullG);
 

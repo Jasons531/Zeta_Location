@@ -62,9 +62,9 @@ extern uint8_t DeviceInfo[4];
 
 extern User_t User;
 
-void UserWakeupInit(void);
-
 void UserKeyWakeupInit(void);
+
+void UserKeyWakeupHandle(void);
 
 void UserPeriPheralInit(void);
 

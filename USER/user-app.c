@@ -47,26 +47,11 @@ void UserKeyWakeupInit(void)
 	HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);			//中断使用
 }
 
-/*UserPeriPheralInit：用户外设初始化，电源开关开启后才进行外设初始化
+/*UserKeyWakeupHandle：	用户唤醒处理
 *参数：								无
 *返回值：   					无
 */
-void UserPeriPheralInit(void)
-{	
-	MMA8452WakeupInit(  );
-	BoardInitMcu(  );
-	
-	MMA845xInit(  );
-	
-	MMA845xID(  );
-}
-
-
-/*UserWakeupHandle：	用户唤醒处理
-*参数：								无
-*返回值：   					无
-*/
-void UserWakeupHandle(void)
+void UserKeyWakeupHandle(void)
 {						
 	///PA0唤醒：初始化外设
 	if(CheckPowerkey(		))
@@ -79,8 +64,7 @@ void UserWakeupHandle(void)
 		__HAL_RCC_CLEAR_RESET_FLAGS(  );
 		
 		///初始化外设
-		UserPeriPheralInit(  );
-		HAL_Delay(2000);
+		BoardInitMcu(  );
 	}
 	else
 	{
@@ -118,7 +102,7 @@ void UserSend(Zeta_t *SendBuf)
 	
 	for(uint8_t i = 0; i < 3; i++)
 	{	
-		DEBUG(2,"start send data\r\n");
+		DEBUG_APP(2,"start send data\r\n");
 		
 		for(uint8_t j = 0; j<SendBuf->Len; j++)
 		DEBUG(2,"%02X ",SendBuf->Buf[j]);
@@ -221,18 +205,17 @@ void UserDownCommand(void)
 	ZetaSendBuf.Buf[3] = 0x02;
 	
 //	ZetaHandle.DownCommand(ZetaRecviceBuf.RevBuf);
-	memcpy1(&ZetaSendBuf.Buf[4], LocatHandles->Cmd(ZetaRecviceBuf.RevBuf), 3);
-	
-	ZetaSendBuf.Buf[2] = 0x04 + 3; 
+	memcpy1(&ZetaSendBuf.Buf[4], LocatHandles->Cmd(ZetaRecviceBuf.RevBuf), \
+	strlen((char *)LocatHandles->Cmd(ZetaRecviceBuf.RevBuf)));
+
+	ZetaSendBuf.Buf[2] = 0x04 + strlen((char *)LocatHandles->Cmd(ZetaRecviceBuf.RevBuf)); 
 	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
 	
 	DEBUG_APP(2,"len = %d\r\n",ZetaSendBuf.Len);
 	
-	memset(ZetaRecviceBuf.RevBuf, 0, strlen((char *)ZetaRecviceBuf.RevBuf));
 	UserSend(&ZetaSendBuf);
-				
-	memset(ZetaSendBuf.Buf, 0, ZetaSendBuf.Len);
-	memset(ZetaRecviceBuf.RevBuf, 0, sizeof(ZetaRecviceBuf.RevBuf)/sizeof(ZetaRecviceBuf.RevBuf[0])); 	
+
+	memset(ZetaSendBuf.RevBuf, 0, ZetaSendBuf.Len - 0x04);
 }
 
 /*UserCheckCmd：用户查询Zeta：服务器查询下发
@@ -468,38 +451,56 @@ void String_Conversion(char *str, uint8_t *src, uint8_t len)
 
 void UserReadFlash(void)
 {	
-	 if(FlashRead32(SLEEP_ADDR)==0||FlashRead32(SLEEP_ADDR)==0xffffffff)
+	if(FlashRead16(HEART_CYCLE_ADDR)==0||FlashRead16(HEART_CYCLE_ADDR)==0xffff)
 	{
-			uint32_t time = 5;//默认5min
-			FlashWrite32(SLEEP_ADDR,&time,1);			
-	 }
-	
-	 if(FlashRead32(AQUATIC_MODE_ADDR)==0||FlashRead32(AQUATIC_MODE_ADDR)==0xffffffff)
-	{
-			uint32_t data = 1;//默认农场
-			FlashWrite32(AQUATIC_MODE_ADDR,&data,1);			
-	 }
-	
-	 if(FlashRead32(MAXLEN_ADDR)==0||FlashRead32(MAXLEN_ADDR)==0xffffffff)
-	 {
-			ZetaSendBuf.MaxLen = 38;
-	 }
-	 else
-	 {
-			ZetaSendBuf.MaxLen = FlashRead16(MAXLEN_ADDR);
-		 	DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
-		 
-			char String_Buffer[2] = {0};
-			
-			FlashRead16More(MAXLEN_ADDR, (uint16_t *)String_Buffer,	MAXLEN_ADDR_SIZE/2);           
-			String_Conversion(String_Buffer, &ZetaSendBuf.MaxLen, MAXLEN_ADDR_SIZE);
+		FlashWrite16(HEART_CYCLE_ADDR,&LocationInfor.HeartCycle,1);			
+	}
 
-		  ZetaSendBuf.MaxLen -= FIXLEN;
-		 
-			DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
-	 }
+	if(FlashRead16(ALARM_CYCLE_ADDR)==0||FlashRead16(ALARM_CYCLE_ADDR)==0xffff)
+	{
+		FlashWrite16(ALARM_CYCLE_ADDR, (uint16_t *)&LocationInfor.AlarmCycle,1);			
+	}
+
+	if(FlashRead16(GPS_LOCA_TIME_ADDR)==0||FlashRead16(GPS_LOCA_TIME_ADDR)==0xffff)
+	{
+		FlashWrite16(GPS_LOCA_TIME_ADDR,&LocationInfor.GpsTime,1);			
+	}
+
+	if(FlashRead16(MOVE_CONDITION_ADDR)==0||FlashRead16(MOVE_CONDITION_ADDR)==0xffff)
+	{
+		FlashWrite16(MOVE_CONDITION_ADDR,(uint16_t *)&LocationInfor.StopTimes,1);			
+	}
+	
+	if(FlashRead16(MOVE_STOP_CONDITION_ADDR)==0||FlashRead16(MOVE_STOP_CONDITION_ADDR)==0xffff)
+	{
+		FlashWrite16(MOVE_STOP_CONDITION_ADDR,(uint16_t *)&LocationInfor.MoveTimes,1);			
+	}
+
+	if(FlashRead16(MOVE_ENABLE_ADDR)==0||FlashRead16(MOVE_ENABLE_ADDR)==0xffff)
+	{
+		FlashWrite16(MOVE_ENABLE_ADDR,(uint16_t *)&LocationInfor.AlarmEnable,1);			
+	}
+
+	if(FlashRead16(MAXLEN_ADDR)==0||FlashRead16(MAXLEN_ADDR)==0xffff)
+	{
+		ZetaSendBuf.MaxLen = 38;
+	}
+	else
+	{
+		ZetaSendBuf.MaxLen = FlashRead16(MAXLEN_ADDR);
+		DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
 	 
-	User.SleepTime = FlashRead32(SLEEP_ADDR);
+		char String_Buffer[2] = {0};
+		
+		FlashRead16More(MAXLEN_ADDR, (uint16_t *)String_Buffer,	MAXLEN_ADDR_SIZE/2);           
+		String_Conversion(String_Buffer, &ZetaSendBuf.MaxLen, MAXLEN_ADDR_SIZE);
+
+		ZetaSendBuf.MaxLen -= FIXLEN;
+	 
+		DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
+	}
+	 
+	User.SleepTime = FlashRead32(HEART_CYCLE_ADDR);
 			 
 	DEBUG_APP(2,"User.SleepTime = %d\r\n",User.SleepTime);
 
