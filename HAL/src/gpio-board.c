@@ -130,7 +130,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 		
 		case GPIO_PIN_8:
 			
-		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8)!=SET)
+		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
 		{
 			DEBUG_APP(2,);
 			MMA8452MultipleRead(  );

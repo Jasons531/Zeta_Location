@@ -50,7 +50,12 @@ I2C							|					  		|
 
 版本说明：
 
-【1】：ZETA-Location-V0.1
+【V1.1】：ZETA-Location-V1.1
+功能：
+【1】：添加MMA8452q加速度传感器，使用中断方式：配置中断需要配置CTRL_REG3、CTRL_REG4、CTRL_REG5，同时配置三个寄存器；
+解决MMA8452Q中断触发失败，原因：CTRL_REG3：IPOL bit位：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败，IPOL = 1，则为下降沿触发
+
+【V1.0】：ZETA-Location-V1.0
 功能：
 【1】休眠方式分两种：
 【1.1】：PA0电源开关处于待机模式，切换进入最低功耗模式

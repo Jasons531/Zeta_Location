@@ -11,6 +11,12 @@
 #include "mma8452q.h"
 #include "i2c.h"
 
+///瞬态检测
+#define		TRANSIENT				0
+
+//运动检测
+#define		MOTION					1
+
 static tword x_value;                       // 16-bit X accelerometer value
 static tword y_value;                       // 16-bit Y accelerometer value
 static tword z_value;                       // 16-bit Z accelerometer value
@@ -57,12 +63,12 @@ void MMA8452WakeupInit(void)
 	HAL_GPIO_Init(MMA8452INT_WAKE_IO, &GPIO_InitStruct);
 	
 	GPIO_InitStruct.Pin = MMA8452INT_1;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; 
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; //GPIO_MODE_IT_FALLING
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_1_IO, &GPIO_InitStruct);
 	
 	GPIO_InitStruct.Pin = MMA8452INT_2;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING; 
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; 
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_2_IO, &GPIO_InitStruct);
 
@@ -77,9 +83,9 @@ void MMA8452WakeupInit(void)
 */
 void MMA845xInit (void)
 {
-	MMA845xSetDataRate( DATA_RATE_10MS );
+	MMA845xSetDataRate( DATA_RATE_10MS ); ///100hz
 	
-	MMA845xSetOversampMode( 0x00 );
+	MMA845xSetOversampMode( 0x07 ); ///Auto-Sleep+Low_Power
 	
 	MMA845xSetPassFilter( HPF_OUT_MASK );///高通or低通滤波
 	
@@ -241,17 +247,16 @@ void MMA8452MultipleRead(void)
 	
 		DEBUG(2,"ZYXDR22 = %02x \r\n",ZYXDR);
 		
+		///Read Interrupt Source
 		uint8_t data_temp = IIC_RegRead(MA8452Q_ADDR, INT_SOURCE_REG);
 
 		if(data_temp==0x04)
 		{
 		
-		//Read the Motion/Freefall Function to clear the interrupt
-		uint8_t data_temp2 = IIC_RegRead(MA8452Q_ADDR, FF_MT_SRC_1_REG);
-
-//		IIC_RegRead(MA8452Q_ADDR, 0X1E);
-		
-		DEBUG_APP(2,"data_temp = %02x data_temp2 = %02x\r\n",data_temp,data_temp2);
+			//Read the Motion/Freefall Function to clear the interrupt
+			uint8_t data_temp2 = IIC_RegRead(MA8452Q_ADDR, FF_MT_SRC_1_REG);
+			
+			DEBUG_APP(2,"data_temp = %02x data_temp2 = %02x\r\n",data_temp,data_temp2);
 		}
 		else if(data_temp==0x20)
 		{
@@ -260,16 +265,6 @@ void MMA8452MultipleRead(void)
 		}
 		
 	}
-}
-
-/*
-*MMA845xInterrupReg：获取加速度坐标
-*参数								：无
-*返回								：无
-*/
-void MMA845xInterrupReg(void)
-{
-	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG5, 0xbd);
 }
 
 /*
@@ -351,7 +346,7 @@ void MMA845xCorrectReg(void)
 }
 
 /*
-*MMA845xMTCount：设置防抖动次数 FF_MT_COUNT_1_REG
+*MMA845xMTCount：		设置防抖动次数 FF_MT_COUNT_1_REG
 *参数								：无 
 *返回								：无
 */
@@ -376,53 +371,42 @@ void MMA845xEnterActiveG(uint8_t FullG)
 }
 
 /*
-*运动检测、瞬态检测只能二选一，不能同时支持
+*运动检测、瞬态检测只能二选一，不能同时支持，同时支持暂没调通
 */
 void MMA8452xInterrupt(void)
 {
 	MMA845xStandby(  );
 
-#if 0 ///interrupt_test
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG1,(IIC_RegRead(MA8452Q_ADDR,CTRL_REG1)& ~FREAD_MASK));
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, PP_OD_MASK);
-
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG4, INT_EN_DRDY_MASK);
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG5, INT_CFG_DRDY_MASK);
-
-#endif 	
-
-
-#if 1
+#if MOTION
 
 ///运动检测设置START
 	IIC_RegWrite(MA8452Q_ADDR, 0x15, 0x78); //Enable Latch, Freefall, X-axis, Y-axis and Z-axis ：运动检测
+
+	IIC_RegWrite(MA8452Q_ADDR, 0x17, 0x10); ///越高，灵敏度越高
+	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.0g/0.063g=15.87. 四舍五入为16，阈值设置为10H
 	
-	IIC_RegWrite(MA8452Q_ADDR, 0x17, 0x08); 
-	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.1g/0.063g=17.46. 四舍五入为18，阈值设置为12H
-	
-	
-	IIC_RegWrite(MA8452Q_ADDR, 0x18, 0x02); //100hz 10 ms debounce timing
+	IIC_RegWrite(MA8452Q_ADDR, 0x18, 0x07); //100hz 10 ms debounce timing 80MS
 ///运动检测设置END
 
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X08);//0X00  PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败
+	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X0A);// PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败
 	/*
 	** Enable the Data Ready Interrupt and route it to INT1.
 	*/
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG4, 0x04);  //04 24
-	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG5, 0x04); //24
+	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG4, 0x84);  
+	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG5, 0x84); 
 
 #endif
 
 
-#if 0
+#if TRANSIENT
 
 ///瞬态检测设置START
 	IIC_RegWrite(MA8452Q_ADDR, 0x1D, 0x1E);
 
-	IIC_RegWrite(MA8452Q_ADDR, 0x1F, 0x08);
+	IIC_RegWrite(MA8452Q_ADDR, 0x1F, 0x10);
 	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.1g/0.063g=17.46. 四舍五入为18，阈值设置为12H
 
-	IIC_RegWrite(MA8452Q_ADDR, 0x20, 0x03); //100hz 30 ms debounce timing
+	IIC_RegWrite(MA8452Q_ADDR, 0x20, 0x05); //100hz 50 ms debounce timing
 
 
 ///瞬态检测设置END

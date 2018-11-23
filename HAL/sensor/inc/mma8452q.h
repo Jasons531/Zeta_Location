@@ -723,6 +723,7 @@ void MMA845xInit(void);
 void MMA8452WakeupInit(void);
 
 void MMA845xStandby(void);
+
 void MMA845xActive(void);
 
 void MMA845xSetDataRate(uint8_t DataRateValue);
@@ -732,8 +733,6 @@ void MMA845xSetOversampMode(uint8_t Mode);
 void MMA845xSetPassFilter(uint8_t Filtered);
 
 void MMA8452MultipleRead(void);
-
-void MMA845xInterrupReg(void);
 
 void MMA845xCorrectReg(void);
 
