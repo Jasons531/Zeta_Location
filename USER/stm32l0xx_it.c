@@ -122,8 +122,6 @@ void PendSV_Handler(void)
 {
 }
 
-uint32_t TimerOverTime = 0; ///timer2³¬Ê±»úÖÆ
-
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
@@ -133,7 +131,6 @@ void SysTick_Handler(void)
 {
 	HAL_IncTick();
 	HAL_SYSTICK_IRQHandler();
-	TimerOverTime ++;
 }
 
 
@@ -205,6 +202,7 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 	if( ( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_HSE ) ||
 			( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_MSI ) )
 	{
+		BoardInitClock(  );
 		BoardInitMcu(  );
 		DEBUG(2,"wkup low-power now\r\n");
 	}

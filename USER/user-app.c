@@ -26,11 +26,11 @@ User_t User = {0, 0, false, false, false};
 
 static uint8_t DeviceInfo[4] = {0};
 
-/*UserKeyWakeupInit：用户开机唤醒初始化
+/*UserKeyPinInit：用户开机唤醒初始化
 *参数：							 无
 *返回值：   				 无
 */
-void UserKeyWakeupInit(void)
+void UserKeyPinInit(void)
 {						
 	GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -48,28 +48,27 @@ void UserKeyWakeupInit(void)
 }
 
 /*UserKeyWakeupHandle：	用户唤醒处理
-*参数：								无
-*返回值：   					无
+*参数：									无
+*返回值：   						无
 */
 void UserKeyWakeupHandle(void)
 {						
 	///PA0唤醒：初始化外设
 	if(CheckPowerkey(		))
-	{
-		DEBUG(2,"开机 \r\n");
-		
+	{		
 		/* 清除待机标志位 */
 		__HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);
 		__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 		__HAL_RCC_CLEAR_RESET_FLAGS(  );
 		
-		///初始化外设
+		///外设初始化
 		BoardInitMcu(  );
+		DEBUG(2,"开机 \r\n");
 	}
 	else
 	{
+		DEBUG(2,"休眠 \r\n");
 		HAL_Delay(1000); ///防止烧写异常
-		DEBUG(2,"休眠\r\n");	
 		BoardEnterStandby(	);
 	}		
 	
@@ -89,6 +88,39 @@ void UserCheckGps(void)
 	DEBUG_APP(2,"*** Now Start positioning ***"); 
 	Gps.Set(  );
 	LocatHandles->SetState( PATIONNULL );
+}
+
+/*UserLocatorReport：用户定位器信息上报
+*参数：							 无
+*返回值：   			   无
+*/
+void UserLocatorReport(uint8_t LocationCmd)
+{
+	uint8_t Len = 4;
+	ZetaSendBuf.Buf[0] = 0xff;
+	ZetaSendBuf.Buf[1] = 0x00;
+	
+	ZetaSendBuf.Buf[3] = 0x02;
+	
+	if(LocatHandles->BreakState(  ) == PATIONDONE)
+	{
+		memcpy1(&ZetaSendBuf.Buf[Len], LocatHandles->GetLoca( LocatHandles->Buf, LocationCmd ), 8);
+		
+		ZetaSendBuf.Buf[2] = Len + 8;
+	}
+	else if(LocatHandles->BreakState(  ) == PATIONFAIL)
+	{
+		ZetaSendBuf.Buf[4] = LocationCmd << 2;
+		
+		ZetaSendBuf.Buf[2] = 5;
+	}
+	
+	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
+	
+	UserSend(&ZetaSendBuf);
+			
+	/********************缓存清除*******************/
+	memset(ZetaSendBuf.Buf, 0, ZetaSendBuf.Len);
 }
 
 /*UserSend：用户调用Zeta发送函数：注意：发送数据前必须等待模块注册完成，否则发送失败，其它模式默认可直接执行,
@@ -379,59 +411,21 @@ void UserIntoLowPower(void)
 	DEBUG_APP(2,"Goto Sleep Mode");
 
 	BoardDeInitMcu( ); ///关闭时钟线
-	
-	/* 使能唤醒引脚：PC13做为系统唤醒输入 */
-	HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN2);
-	
+		
 	// Disable the Power Voltage Detector
 	HAL_PWR_DisablePVD( );
-	
+
 	SET_BIT( PWR->CR, PWR_CR_CWUF );
 	/* Set MCU in ULP (Ultra Low Power) */
 	HAL_PWREx_EnableUltraLowPower( );
-	
+
 	/* Enable the fast wake up from Ultra low power mode */
 	HAL_PWREx_EnableFastWakeUp( );
-
+		
 	/*****************进入停机模式*********************/
 	/* Enter Stop Mode */
 	__HAL_PWR_CLEAR_FLAG( PWR_FLAG_WU );
 	HAL_PWR_EnterSTOPMode( PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI );
-}
-
-/*!
-*UserGetAddID：	获取设备ID
-*返回值: 		    无
-*/
-void UserGetAddID(void)
-{
-	static char String_Buffer[33] = {0}; ///读取flash写入字符串
-	static uint8_t DevTemp[8] = {0};
-
-	FlashRead16More(DEV_ADDR,(uint16_t*)String_Buffer,DEV_ADDR_SIZE/2);         ////DEV
-	
-//	sscanf(String_Buffer, "%[0-9]", DevTemp);
-	
-	String_Conversion(String_Buffer, DevTemp, DEV_ADDR_SIZE);  
-
-	///09 07 18 30 0000 0001 ///0730 0001  30: Zeta  31:Zeta+GPS	
-	DeviceInfo[0] = DevTemp[1];
-	DeviceInfo[1] = DevTemp[3];
-	
-	DeviceInfo[2] = DevTemp[6];
-	DeviceInfo[3] = DevTemp[7];
-	
-	for(uint8_t i = 0; i < 8; i++)
-	DEBUG(2,"%02x ",DevTemp[i]);
-	DEBUG(2,"\r\n");
-
-	
-	DEBUG(2,"DEV: ");
-	for(uint8_t i = 0; i < 4; i++)
-	DEBUG(2,"%02x ",DeviceInfo[i]);
-	DEBUG(2,"\r\n");
-	
-	memset(String_Buffer, 33, 0);	
 }
 
 /*!
@@ -488,7 +482,6 @@ void UserReadFlash(void)
 	else
 	{
 		ZetaSendBuf.MaxLen = FlashRead16(MAXLEN_ADDR);
-		DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
 	 
 		char String_Buffer[2] = {0};
 		
@@ -496,12 +489,8 @@ void UserReadFlash(void)
 		String_Conversion(String_Buffer, &ZetaSendBuf.MaxLen, MAXLEN_ADDR_SIZE);
 
 		ZetaSendBuf.MaxLen -= FIXLEN;
-	 
-		DEBUG_APP(2,"ZetaSendBuf.MaxLen = %d",ZetaSendBuf.MaxLen);
-	}
+		}
 	 
 	User.SleepTime = FlashRead32(HEART_CYCLE_ADDR);
-			 
-	DEBUG_APP(2,"User.SleepTime = %d\r\n",User.SleepTime);
 
 }

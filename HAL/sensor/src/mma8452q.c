@@ -72,7 +72,7 @@ void MMA8452InterruptPinInit(void)
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_2_IO, &GPIO_InitStruct);
 
-	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 3, 0);	
+	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 4, 0);	
 	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);		
 }
 
@@ -84,19 +84,17 @@ void MMA8452InterruptPinInit(void)
 void MMA845xInit (void)
 {
 	MX_I2C2_Init(  );
-
+	
 	MMA8452InterruptPinInit(  );
 	
 	MMA845xSetDataRate( DATA_RATE_10MS ); ///100hz
-	
+
 	MMA845xSetOversampMode( 0x07 ); ///Auto-Sleep+Low_Power
-	
+
 	MMA845xSetPassFilter( HPF_OUT_MASK );///高通or低通滤波
-	
+
 	MMA845xEnterActiveG(FULL_SCALE_2G);
-		
-//	MMA845xCorrectReg(  );
-	
+
 	MMA8452xInterrupt(  );
 
 	MMA845xID(  );
@@ -220,8 +218,8 @@ void MMA8452MultipleRead(void)
 //		HAL_I2C_Mem_Read(&hi2c2,MA8452Q_ADDR+1,wdata,1,rdata,6,100);  //////适合16bit寄存器	
 			
 		///12bit 处理方式
-		Xdata = (rdata[0] << 4) + (rdata[1] >> 4);
-		
+		Xdata = (rdata[0] << 4) | (rdata[1] >> 4);
+				
 		if(Xdata>0x0800) /////负数：无符号表达
 		{
 			Xdata = 0x0f00 - 0x0800 + 1;
@@ -230,8 +228,8 @@ void MMA8452MultipleRead(void)
 		else
 			DEBUG(2,"X = %.3f ",Xdata * 0.001);
 		
-		Ydata = (rdata[2] << 4) + (rdata[3] >> 4);
-		
+		Ydata = (rdata[2] << 4) | (rdata[3] >> 4);
+				
 		if(Ydata>0x0800) /////负数：无符号表达
 		{
 			Ydata = 0x0f00 - 0x0800 + 1;
@@ -240,8 +238,8 @@ void MMA8452MultipleRead(void)
 		else
 			DEBUG(2,"Y = %.3f ",Ydata * 0.001);
 
-		Zdata = (rdata[4] << 4) + (rdata[5] >> 4);
-
+		Zdata = (rdata[4] << 4) | (rdata[5] >> 4);
+		
 		if(Zdata>0x0800) /////负数：无符号表达
 		{
 			Zdata = 0x0f00 - 0x0800 + 1;
@@ -303,8 +301,8 @@ void MMA845xCorrectReg(void)
 	
 	MMA845xActive(  );
 	
-	HAL_Delay(21); ///2/ODR + 1ms delay timing
-	
+	HAL_Delay(30); ///2/ODR + 1ms delay timing
+
 	for(uint8_t i = 0; i < 6; ++i)
 	HAL_I2C_Mem_Read(&hi2c2,MA8452Q_ADDR+1,wdata+i,1,&value[i],1,100);  //////适合16bit寄存器	
 	
@@ -347,6 +345,7 @@ void MMA845xCorrectReg(void)
 		Z_cal+=256;
 		}
 	}
+		
 	MMA845xStandby();
 	IIC_RegWrite(SlaveAddressIIC, OFF_X_REG, X_cal);
 	IIC_RegWrite(SlaveAddressIIC, OFF_Y_REG, Y_cal);

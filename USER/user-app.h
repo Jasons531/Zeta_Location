@@ -62,7 +62,7 @@ extern uint8_t DeviceInfo[4];
 
 extern User_t User;
 
-void UserKeyWakeupInit(void);
+void UserKeyPinInit(void);
 
 void UserKeyWakeupHandle(void);
 
@@ -72,15 +72,13 @@ void UserWakeupHandle(void);
 
 void UserCheckGps(void);
 
-void UserSendZeta(Zeta_t *SendBuf);
+void UserLocatorReport(uint8_t LocationCmd);
 
 void UserSend(Zeta_t *SendBuf);
 
 void UserSendGps(LocationIn_t LocatCmd);
 
 void UserSendTest(void);
-
-void UserSendSensor(void);
 
 void UserDownCommand(void);
 
@@ -93,8 +91,6 @@ void UserSetTimer(ZetaTimer_t Timer);
 void UserCloseTimer(ZetaTimer_t Timer);
 
 void UserIntoLowPower(void);
-
-void UserGetAddID(void);
 
 void String_Conversion(char *str, uint8_t *src, uint8_t len);
 

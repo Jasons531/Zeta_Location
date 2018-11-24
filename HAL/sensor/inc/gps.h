@@ -19,7 +19,7 @@ typedef struct
 	bool 			Posfix;
 	bool      South;
 	bool      West;
-	char 			GLL[54];
+//	char 			GLL[54];
 	uint8_t 	LocationState;
 	uint32_t 	GpsOverTime;
 	uint32_t 	NorthSpend;

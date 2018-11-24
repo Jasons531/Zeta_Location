@@ -13,7 +13,7 @@
 #define MTK_POS_FIX			"$PMTK220,1000*1F\r\n" //  $PMTK220,3000*1D
 #define MTK_GLL					"$PMTK314,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0*28\r\n"
 
-SetGpsMode_t SetGpsMode = {false, false, false, false, false, false, {0}, PATIONNULL, 0, 0, 0};
+SetGpsMode_t SetGpsMode = {false, false, false, false, false, false, PATIONNULL, 0, 0, 0};
 
 const Gps_t Gps = {GpsInit, GpsEnable, GpsDisable, GpsSet, GpsGetPositionAgain};
 

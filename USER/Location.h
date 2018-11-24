@@ -20,8 +20,11 @@
 #include "zeta.h"
 
 /**********************上行命令：start*********************//*
-************心跳上报************/
-#define 	HEART_REPORT									0x00
+************心跳上报，定位成功************/
+#define 	HEART_REPORT_SUCESS						0x00
+
+/************心跳上报，定位失败************/
+#define 	HEART_REPORT_FAIL							0x0F
 
 /************告警上报定位成功************/
 #define 	ALARM_REP_LOCA_SUCESS					0x01
@@ -35,8 +38,11 @@
 /************资产静止，定位失败************/
 #define		MOVE_STATIC_LOCA_FAIL					0x04
 
-/************查询反馈************/
-#define		QUERY_FEED_BACK								0X05
+/************查询反馈，定位成功************/
+#define		QUERY_FEED_LOCA_SUCESS				0X05
+
+/************查询反馈，定位失败************/
+#define		QUERY_FEED_LOCA_FAIL					0X06
 
 /************发送版本ID：上电第一次发送************/
 #define		QUERY_SEND_VER								0X80	
@@ -44,10 +50,10 @@
 /**********************上行命令：end*********************/
 
 /**********************下行命令：start*********************//*
-************设置心跳周期************/
+************设置心跳周期 ：分钟************/
 #define 	HEART_SET_CYCLE								0x40
 
-/************查询心跳周期************/
+/************查询心跳周期 ：分钟************/
 #define 	HEART_CHECK_CYCLE							0x41
 
 /************设置告警周期************/
@@ -75,10 +81,10 @@
 #define		MOVE_CHECK_STOP_CONDITION			0X61
 	
 /************设置资产移动告警开关************/
-#define		MOVE_SET_MOVE_SWITCH					0X70
+#define		MOVE_SET_MOVE_ENABLE					0X70
 
 /************查询资产移动告警开关************/
-#define		MOVE_CHECK_MOVE_SWITCH				0X71
+#define		MOVE_CHECK_MOVE_ENABLE				0X71
 		
 /************查询版本ID************/
 #define		QUERY_CHECK_VER								0X81
@@ -114,7 +120,7 @@ typedef struct LocationI_s
 	uint8_t	  StopTimes;
 	
 	/************资产移动开关：0：不告警，1：告警************/
-	uint8_t   AlarmSwitch;
+	uint8_t   AlarmEnable;
 	
 	uint8_t 	Versions;
 
@@ -123,6 +129,8 @@ typedef struct LocationI_s
 
 typedef struct LocatH_s
 {
+ char 		Buf[54];
+	
  uint8_t 	*(*Cmd)(uint8_t *ZRev);
 
  uint8_t 	*(*GetLoca)(char *GpsLocation, uint8_t LocationCmd);

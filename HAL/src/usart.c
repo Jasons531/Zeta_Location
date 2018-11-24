@@ -347,14 +347,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 						  SetGpsMode.LocationState = PATIONDONE;
 					}
 					
-					memcpy(SetGpsMode.GLL, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
-					SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\r';
-          SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\n';
+					memcpy(LocatHandles->Buf, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
+//					SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\r';
+//          SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\n';
 				}
 				else if(UART_RX_DATA2.USART_RX_BUF[UART_RX_DATA2.USART_RX_Len-6] == 'V')
 				{
 					DEBUG(3,"get poation false\r\n"); 
-					memcpy(SetGpsMode.GLL, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
+					memcpy(LocatHandles->Buf, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
 				}	
 			}		
 			 

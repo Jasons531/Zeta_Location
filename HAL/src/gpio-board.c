@@ -66,6 +66,10 @@ uint8_t CheckPowerkey(void)
  
 	while(1)																		//死循环，由return结束
 	{	
+		if(wakeup) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
+		{
+			BoardInitClock(  );
+		}
 		/*************** 1S按键延时 ***************/
 		HAL_Delay(10);																//延迟一段时间再检测
 		if(HAL_GPIO_ReadPin(POWER_KEY_IO,POWER_KEY) == KEY_ON)			//检测到按下按键
@@ -92,6 +96,7 @@ uint8_t CheckPowerkey(void)
 	}
 }
 
+bool wakeup_pc = false;
 /**
   * @brief  EXTI callback
   * @param  EXTI : EXTI handle
@@ -105,12 +110,17 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 		case GPIO_PIN_0:  ///POWER_KEY
 			if(CheckPowerkey(		))
 			{
-				DEBUG(2,"关机 \r\n");
-				BoardEnterStandby(	);
+					DEBUG(2,"关机 \r\n");
+					BoardEnterStandby(	);
 			}
 			else
 			{
-				DEBUG(2,"意外中断\r\n");
+				DEBUG(3,"意外中断\r\n");
+				if(wakeup) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
+				{
+					SetRtcAlarm(30); ///闹钟时间-当前时间
+					UserIntoLowPower(  );
+				}
 			}		
 
 		break;
@@ -132,8 +142,18 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			
 		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
 		{
-			DEBUG_APP(2,);
-			MMA8452MultipleRead(  );
+			if(!wakeup&&!wakeup_pc)
+			{
+				DEBUG_APP(2,);
+				MMA8452MultipleRead(  );
+			}
+			else if(wakeup_pc)
+			{
+				DEBUG_APP(2,);
+	
+				MMA8452MultipleRead(  );
+			}
+			wakeup_pc = false;
 		}
 
 		break;
@@ -141,8 +161,19 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 		case GPIO_PIN_13:	
 		if(HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13))
 		{
-			DEBUG_APP(2,);
+			DEBUG_APP(3,);
+			if(wakeup)
+			{
+				BoardInitClock(  );
+				
+				DEBUG(2,"GPIO_PIN_13 wkup low-power now\r\n");
+				BoardInitMcu(  );
+				
+				wakeup_pc =true;
+				wakeup = false;			
+			}
 		}
+		
 		
 		break;
 		

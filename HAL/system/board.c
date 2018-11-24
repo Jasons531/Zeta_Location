@@ -10,6 +10,8 @@
 */
 #include "board.h"
 
+bool wakeup = false;
+
 /*!
  * Flag to indicate if the MCU is Initialized
  */
@@ -31,19 +33,23 @@ void BoardInitClock( void )
 		__HAL_RCC_GPIOA_CLK_ENABLE(); ///开启时钟
 		
 		RTC_Init(  );
-												
+		
+		/*******************开启RTC中断*******************/
+		HAL_NVIC_SetPriority(RTC_IRQn, 3, 0);
+		HAL_NVIC_EnableIRQ(RTC_IRQn);
+									
 		McuInitialized = true;
 		
 	} 
 	else
 	{
-		SystemClockReConfig(  );
-		
 		/* Enable Power Control clock */
 		__HAL_RCC_GPIOC_CLK_ENABLE();
 		__HAL_RCC_GPIOH_CLK_ENABLE();
 		__HAL_RCC_GPIOB_CLK_ENABLE();
-		__HAL_RCC_GPIOA_CLK_ENABLE(); ///开启时钟							
+		__HAL_RCC_GPIOA_CLK_ENABLE(); ///开启时钟			
+		
+		SystemClockReConfig(  );				
 	}
 	
 	/***************串口初始化********************/
@@ -51,19 +57,20 @@ void BoardInitClock( void )
 }
 
 void BoardInitMcu( void )
-{							
+{		
+	DEBUG_APP(2,);
 	MMA845xInit(  );
-	
+	DEBUG_APP(2,);
+
 	/****************ADC初始化*******************/
 	MX_ADC_Init(  );
-	
-	/*******************开启RTC中断*******************/
-	HAL_NVIC_SetPriority(RTC_IRQn, 4, 0);
-	HAL_NVIC_EnableIRQ(RTC_IRQn);
-						
+	DEBUG_APP(2,);
+					
 	ZetaHandle.Init(  );
-	
+	DEBUG_APP(2,);
+
 	ZetaHandle.PowerOn(  );
+	DEBUG_APP(2,);
 }
 
 /*
@@ -85,7 +92,11 @@ void BoardDeInitMcu( void )
 		
 	/****************************************/
     /* Disable the Peripheral */	
-	HAL_ADC_MspDeInit(&hadc);  ///OK
+	
+	HAL_I2C_MspInit(&hi2c2);
+	hi2c2.State = HAL_I2C_STATE_RESET;
+	
+	HAL_ADC_MspDeInit(&hadc);  ///OK 
 	hadc.State = HAL_ADC_STATE_RESET;
 	
 	HAL_UART_DeInit(&hlpuart1);
@@ -102,36 +113,36 @@ void BoardDeInitMcu( void )
 	HAL_TIM_Base_MspDeInit(&htim2);
 	htim2.State = HAL_TIM_STATE_RESET;
 	
-	/*******************关闭SPI*********************/
-		
-	GPIO_InitStructure.Pin = 0xF7FF;   ///GPIO_PIN_ll 0xF7FF  
+	/*******************关闭SPI*********************/	
+	GPIO_InitStructure.Pin = 0xF6FE;   ///GPIO_PIN_ll  GPIO_PIN_0	 GPIO_PIN_8  
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;
 
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure); 
 		
-	GPIO_InitStructure.Pin = GPIO_PIN_All;   ///GPIO_PIN_All
+	GPIO_InitStructure.Pin = 0xDFFF;   ///GPIO_PIN_13
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;
 
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
-	HAL_GPIO_Init(GPIOH, &GPIO_InitStructure);
 					
-  GPIO_InitStructure.Pin = 0xDFFF;  /// PB9：CH_CE(ok) 0xDFFF
+  GPIO_InitStructure.Pin = GPIO_PIN_All;  /// PB9：CH_CE(ok) 0xDFFF
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;	
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
-                
-  HAL_SuspendTick();
+	HAL_GPIO_Init(GPIOH, &GPIO_InitStructure);
+              
+	/*********************失能系统定时器************************/							
+	SysTick->CTRL &= ~SysTick_CTRL_CLKSOURCE_Msk | ~SysTick_CTRL_ENABLE_Msk | ~SysTick_CTRL_TICKINT_Msk;
 	
 	/* Disable GPIOs clock */
-	__HAL_RCC_GPIOA_CLK_DISABLE();
-	__HAL_RCC_GPIOB_CLK_DISABLE();
-	__HAL_RCC_GPIOC_CLK_DISABLE();
-	__HAL_RCC_GPIOH_CLK_DISABLE();
+//	__HAL_RCC_GPIOA_CLK_DISABLE(	);
+	__HAL_RCC_GPIOB_CLK_DISABLE(	);
+//	__HAL_RCC_GPIOC_CLK_DISABLE();
+	__HAL_RCC_GPIOH_CLK_DISABLE(	);
     
 }
 
@@ -248,8 +259,11 @@ void SystemClockReConfig( void )
     while( __HAL_RCC_GET_SYSCLK_SOURCE( ) != RCC_SYSCLKSOURCE_STATUS_PLLCLK )
     {
     }
-    /* Resume Tick interrupt if disabled prior to sleep mode entry*/
-    HAL_ResumeTick();
+		
+		/*********************使能系统定时器************************/
+		SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
+                   SysTick_CTRL_TICKINT_Msk   |
+                   SysTick_CTRL_ENABLE_Msk;
 }
 
 /**
@@ -308,8 +322,8 @@ void SystemClockConfig( void )
     Error_Handler();
   }
 	
-    /**Configure the Systick interrupt time 1ms
-    */
+	/**Configure the Systick interrupt time 1ms
+  */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
     /**Configure the Systick 

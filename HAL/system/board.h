@@ -40,6 +40,8 @@ Maintainer: Miguel Luis and Gregory Cristian
 #include "wwdg.h"
 #include "mma8452q.h"
 
+extern bool wakeup;
+
 /*!
  * Unique Devices IDs register set ( STM32F1xxx )
  */

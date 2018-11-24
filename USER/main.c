@@ -23,7 +23,6 @@
 extern UART_HandleTypeDef 			UartHandle;
 extern RTC_HandleTypeDef 				RtcHandle;
 
-
 /*******************************************************************************************************************
   * @函数名称		main
   * @函数说明   主函数 
@@ -35,35 +34,42 @@ extern RTC_HandleTypeDef 				RtcHandle;
 
 int main(void)
 {			
+	/**************时钟初始化************/
    BoardInitClock(  );
-   
-   LocationInit(  );
-
-   UserReadFlash(  );
-	
-	 UserKeyWakeupInit(  );
 	
 	 DEBUG(2,"TIME : %s  DATE : %s\r\n",__TIME__, __DATE__); 	 
+   
+	/**************定位器初始化************/
+   LocationInit(  );
+
+	/**************读取FLASH************/
+   UserReadFlash(  );
 	
+	/**************电源开关初始化************/
+	 UserKeyPinInit(  );
+		
+	/**************电源开关处理************/
 	 UserKeyWakeupHandle(  );	
-	
+		
 //	 UserCheckGps(  );
-							 	 						
-	 UserCheckCmd(&UserZetaCheck[MAC]);
+//							 	 						
+//	 UserCheckCmd(&UserZetaCheck[MAC]);
 
-	 UserCheckCmd(&UserZetaCheck[COUNTER]);
-	
-	 UserCheckCmd(&UserZetaCheck[RSSI]);
+//	 UserCheckCmd(&UserZetaCheck[COUNTER]);
+//	
+//	 UserCheckCmd(&UserZetaCheck[RSSI]);
 
-	 UserSetHeart(0x01);
+//	 UserSetHeart(0x01);
 	 
 		while (1)
    {	
 		 UserSendTest(  ); 
-		 HAL_Delay(30000);
 		 
-
-//		 HAL_Delay(5000);
+		 HAL_Delay(5000);
+		 
+		 wakeup = true;
+		 SetRtcAlarm(60);
+		 UserIntoLowPower(  );
 	
 #if 0		 
 			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
