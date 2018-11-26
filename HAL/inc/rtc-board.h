@@ -34,6 +34,8 @@ void RTC_Init(void);
 
 void RtcvRtcCalibrate(void);
 
+uint32_t GetCurrentSleepRtc(void);
+
 void SetRtcAlarm(uint16_t time);
 
 

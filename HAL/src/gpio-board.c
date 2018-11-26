@@ -104,7 +104,8 @@ bool wakeup_pc = false;
 	* @brief	中断回调函数：处理中断事件----进行IO判断，处理相应的DIO0---DIO5
   */
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
-{
+{	
+	uint32_t SleepTime = 0;
 	switch(GPIO_Pin)
 	{
 		case GPIO_PIN_0:  ///POWER_KEY
@@ -118,7 +119,10 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				DEBUG(3,"意外中断\r\n");
 				if(wakeup) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
 				{
-					SetRtcAlarm(30); ///闹钟时间-当前时间
+					SleepTime = GetCurrentSleepRtc(  );
+										
+					DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
+					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
 					UserIntoLowPower(  );
 				}
 			}		
@@ -149,11 +153,12 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			}
 			else if(wakeup_pc)
 			{
+				wakeup_pc = false;
 				DEBUG_APP(2,);
 	
 				MMA8452MultipleRead(  );
 			}
-			wakeup_pc = false;
+			
 		}
 
 		break;
@@ -167,13 +172,11 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				BoardInitClock(  );
 				
 				DEBUG(2,"GPIO_PIN_13 wkup low-power now\r\n");
-				BoardInitMcu(  );
-				
+				BoardInitMcu(  );				
 				wakeup_pc =true;
 				wakeup = false;			
 			}
-		}
-		
+		}		
 		
 		break;
 		

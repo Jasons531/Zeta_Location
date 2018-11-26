@@ -38,8 +38,7 @@ void BoardInitClock( void )
 		HAL_NVIC_SetPriority(RTC_IRQn, 3, 0);
 		HAL_NVIC_EnableIRQ(RTC_IRQn);
 									
-		McuInitialized = true;
-		
+		McuInitialized = true;	
 	} 
 	else
 	{
@@ -58,19 +57,14 @@ void BoardInitClock( void )
 
 void BoardInitMcu( void )
 {		
-	DEBUG_APP(2,);
 	MMA845xInit(  );
-	DEBUG_APP(2,);
 
 	/****************ADC初始化*******************/
 	MX_ADC_Init(  );
-	DEBUG_APP(2,);
 					
 	ZetaHandle.Init(  );
-	DEBUG_APP(2,);
 
 	ZetaHandle.PowerOn(  );
-	DEBUG_APP(2,);
 }
 
 /*
@@ -114,7 +108,7 @@ void BoardDeInitMcu( void )
 	htim2.State = HAL_TIM_STATE_RESET;
 	
 	/*******************关闭SPI*********************/	
-	GPIO_InitStructure.Pin = 0xF6FE;   ///GPIO_PIN_ll  GPIO_PIN_0	 GPIO_PIN_8  
+	GPIO_InitStructure.Pin = 0xFEFE;   ///GPIO_PIN_ll  GPIO_PIN_0	 GPIO_PIN_8  
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;

@@ -50,6 +50,11 @@ I2C							|					  		|
 
 版本说明：
 
+【V1.2】：ZETA-Location-V1.2
+功能：
+【1】：优化MMA8452q加速度传感器功耗，单机功耗：10ua，加入mma8452q功耗36ua
+
+
 【V1.1】：ZETA-Location-V1.1
 功能：
 【1】：添加MMA8452q加速度传感器，使用中断方式：配置中断需要配置CTRL_REG3、CTRL_REG4、CTRL_REG5，同时配置三个寄存器；

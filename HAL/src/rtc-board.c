@@ -184,6 +184,34 @@ void RtcvRtcCalibrate(void)
 
 /*******************************以上为RTC底层代码部分****************************************/
 
+/*GetCurrentSleepRtc：意外唤醒触发，重新获取休眠时间
+*参数								：无
+*返回值							：无
+*/
+uint32_t GetCurrentSleepRtc(void)
+{
+	RTC_TimeTypeDef  RTC_TimeStruct;
+	RTC_AlarmTypeDef RTC_AlarmStruct;
+	
+	uint32_t CurrentRtc = 0;
+	
+	uint32_t AlarmTime = 0;
+			
+	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);
+	
+	HAL_RTC_GetAlarm(&RtcHandle, &RTC_AlarmStruct, RTC_ALARM_A, RTC_FORMAT_BIN);
+		
+	CurrentRtc = RTC_TimeStruct.Hours * 36000 + RTC_TimeStruct.Minutes * 60 + RTC_TimeStruct.Seconds;
+	
+	AlarmTime = RTC_AlarmStruct.AlarmTime.Hours * 36000 + RTC_AlarmStruct.AlarmTime.Minutes * 60 + RTC_AlarmStruct.AlarmTime.Seconds;
+	
+	DEBUG(2,"currenttime %d  hour : %d min : %d second : %d\r\n",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
+	
+	DEBUG(2,"AlarmTime %d  hour : %d min : %d second : %d\r\n",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
+
+	return 	(AlarmTime >= CurrentRtc)?(AlarmTime - CurrentRtc):10;
+}
+
 /*SetRtcAlarm：设置RTC闹钟休眠唤醒
 */
 void SetRtcAlarm(uint16_t time)

@@ -59,7 +59,7 @@ int main(void)
 //	
 //	 UserCheckCmd(&UserZetaCheck[RSSI]);
 
-//	 UserSetHeart(0x01);
+//	 UserSetHeart(0x00);
 	 
 		while (1)
    {	

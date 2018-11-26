@@ -202,12 +202,15 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 	if( ( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_HSE ) ||
 			( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_MSI ) )
 	{
+		__disable_irq( );
+		
 		BoardInitClock(  );
 		BoardInitMcu(  );
+		
+		/** enable irq */
+		__enable_irq( );
 		DEBUG(2,"wkup low-power now\r\n");
 	}
-    /** enable irq */
-	__enable_irq( );
 }
 
 /**

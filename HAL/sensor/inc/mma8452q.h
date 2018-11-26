@@ -728,7 +728,7 @@ void MMA845xActive(void);
 
 void MMA845xSetDataRate(uint8_t DataRateValue);
 
-void MMA845xSetOversampMode(uint8_t Mode);
+void MMA8452xSetPowerMode(uint8_t	PowerMode);
 
 void MMA845xSetPassFilter(uint8_t Filtered);
 

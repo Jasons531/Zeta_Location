@@ -45,9 +45,9 @@ void IIC_RegWrite(uint16_t address, uint8_t reg, uint8_t data)
 	HAL_I2C_Mem_Write(&hi2c2, address, reg, 1, &data, 1, 10);
 }
 
-/* MMA8452InterruptPinInit：MMA8452q外部唤醒IO初始化
-*参数：								无
-*返回值：   					无
+/* MMA8452InterruptPinInit：MMA8452q外部唤醒IO初始化，只使用MMA8492 PIN1
+*参数：											无
+*返回值：   								无
 */
 void MMA8452InterruptPinInit(void)
 {						
@@ -66,11 +66,6 @@ void MMA8452InterruptPinInit(void)
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; //GPIO_MODE_IT_FALLING
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_1_IO, &GPIO_InitStruct);
-	
-	GPIO_InitStruct.Pin = MMA8452INT_2;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; 
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-	HAL_GPIO_Init(MMA8452INT_2_IO, &GPIO_InitStruct);
 
 	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 4, 0);	
 	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);		
@@ -86,10 +81,10 @@ void MMA845xInit (void)
 	MX_I2C2_Init(  );
 	
 	MMA8452InterruptPinInit(  );
+		
+	MMA8452xSetPowerMode( 0x1F );  ///Auto-Sleep+Low_Power
 	
-	MMA845xSetDataRate( DATA_RATE_10MS ); ///100hz
-
-	MMA845xSetOversampMode( 0x07 ); ///Auto-Sleep+Low_Power
+	MMA845xSetDataRate( 0x40 | DATA_RATE_80MS ); ///Sleep_Freq + 12.5hz
 
 	MMA845xSetPassFilter( HPF_OUT_MASK );///高通or低通滤波
 
@@ -145,35 +140,31 @@ void MMA845xID(void)
 }
 
 /*
+*MMA8452xSetPowerMode：设置速率
+*参数							 	 ：00: normal 1: Low Noise Low Power 2: High Resolution 3: Low Power
+*返回							 	 ：无
+*/
+void MMA8452xSetPowerMode(uint8_t	PowerMode)
+{
+	MMA845xStandby(  );
+	
+	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG2, 0X40 | PowerMode); //RST: 否则可以存在异常
+	
+	MMA845xActive(  );
+}
+
+/*
 *MMA845xSetDataRate：设置速率
-*参数							 ：频率 - DATA_RATE_10MS(100hz)
+*参数							 ：频率 - DATA_RATE_80MS(12.5hz)
 *返回							 ：无
 */
 void MMA845xSetDataRate(uint8_t DataRateValue)
 {
 	MMA845xStandby(  );
 	
-	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG2, 0X40); //RST: 否则可以存在异常
-	
 	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG1, (IIC_RegRead(MA8452Q_ADDR, CTRL_REG1) & ~DR_MASK));
 	
 	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG1, (IIC_RegRead(MA8452Q_ADDR, CTRL_REG1) | DataRateValue)); 
-	
-	MMA845xActive(  );
-}
-
-/*
-*MMA845xSetOversampMode：设置工作模式
-*参数							 		 ：00: normal 1: Low Noise Low Power 2: High Resolution 3: Low Power
-*返回							 		 ：无
-*/
-void MMA845xSetOversampMode(uint8_t Mode)
-{
-	MMA845xStandby(  );
-	
-	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG1, (IIC_RegRead(MA8452Q_ADDR, CTRL_REG2) & ~MODS_MASK));
-	
-	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG1, (IIC_RegRead(MA8452Q_ADDR, CTRL_REG2) | Mode)); 
 	
 	MMA845xActive(  );
 }
@@ -187,7 +178,7 @@ void MMA845xSetPassFilter(uint8_t Filtered)
 {
 	MMA845xStandby(  );
 	
-	IIC_RegWrite(MA8452Q_ADDR, CTRL_REG1, (IIC_RegRead(MA8452Q_ADDR, XYZ_DATA_CFG_REG) | Filtered));
+	IIC_RegWrite(MA8452Q_ADDR, XYZ_DATA_CFG_REG, (IIC_RegRead(MA8452Q_ADDR, XYZ_DATA_CFG_REG) | Filtered));
 		
 	MMA845xActive(  );
 }
@@ -214,9 +205,7 @@ void MMA8452MultipleRead(void)
 	{	
 		for(uint8_t i = 0; i < 6; ++i)
 		HAL_I2C_Mem_Read(&hi2c2,MA8452Q_ADDR+1,wdata+i,1,&rdata[i],1,100);  //////适合16bit寄存器	
-		
-//		HAL_I2C_Mem_Read(&hi2c2,MA8452Q_ADDR+1,wdata,1,rdata,6,100);  //////适合16bit寄存器	
-			
+					
 		///12bit 处理方式
 		Xdata = (rdata[0] << 4) | (rdata[1] >> 4);
 				
@@ -380,10 +369,10 @@ void MMA8452xInterrupt(void)
 ///运动检测设置START
 	IIC_RegWrite(MA8452Q_ADDR, FF_MT_CFG_1_REG, 0x78); //Enable Latch, Freefall, X-axis, Y-axis and Z-axis ：运动检测
 
-	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x10); ///越高，灵敏度越高
+	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x10); ///越高，灵敏度越高
 	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.0g/0.063g=15.87. 四舍五入为16，阈值设置为10H
 	
-	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x08); //100hz 10 ms debounce timing 80ms
+	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 160ms
 ///运动检测设置END
 
 	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X0A);// PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败
