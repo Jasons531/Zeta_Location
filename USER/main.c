@@ -23,6 +23,8 @@
 extern UART_HandleTypeDef 			UartHandle;
 extern RTC_HandleTypeDef 				RtcHandle;
 
+uint32_t SleepTimes = 0;
+
 /*******************************************************************************************************************
   * @函数名称		main
   * @函数说明   主函数 
@@ -50,28 +52,57 @@ int main(void)
 		
 	/**************电源开关处理************/
 	 UserKeyWakeupHandle(  );	
-		
-//	 UserCheckGps(  );
-//							 	 						
-//	 UserCheckCmd(&UserZetaCheck[MAC]);
+											 	 						
+	 UserCheckCmd(&UserZetaCheck[MAC]);
 
-//	 UserCheckCmd(&UserZetaCheck[COUNTER]);
-//	
-//	 UserCheckCmd(&UserZetaCheck[RSSI]);
+	 UserCheckCmd(&UserZetaCheck[COUNTER]);
+	
+	 UserCheckCmd(&UserZetaCheck[RSSI]);
 
-//	 UserSetHeart(0x00);
+	 UserSetHeart(0x00);
+	 
+//	 ///休眠前校准RTC时钟
+//	 RtcvRtcCalibrate(  );
 	 
 		while (1)
-   {	
-		 UserSendTest(  ); 
+   {			 
+			UserLocatReport(  );
+		 	 switch(LocationInfor.MotionState)
+			{
+				case Start:
+					LocationInfor.MotionState = Wait;
+					if(PATIONNULL != LocatHandles->BreakState(  )) ///定位完成休眠时间
+					{
+						SleepTimes = GetCurrentSleepRtc(  );
+					}
+					else
+						SleepTimes = 10;
+										
+					DEBUG(2,"AlarmTime = %d \r\n", SleepTimes);
+					
+					User.SleepWakeUp = true;
+					
+					__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
+					DEBUG_APP(2,"GPIO_PIN_8 = %d",HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8));
+									
+					User.SleepWakeUp = true;
+					SetRtcAlarm(SleepTimes); ///闹钟时间-当前时间
+				
+					UserIntoLowPower(  );
+					break;
+				case Stop:
+					LocationInfor.MotionState = Wait;
+					DEBUG_APP(2," ----- MotionState Stop ----- ");
+					HAL_Delay(8000);
+					
+					break;
+				default :
+					break;
+			}
 		 
-		 HAL_Delay(5000);
 		 
-		 wakeup = true;
-		 SetRtcAlarm(60);
-		 UserIntoLowPower(  );
-	
-#if 0		 
+		 	
+#if 0	 
 			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
 			char GPLL[10];
 			char N_Data[15] ;
@@ -126,12 +157,7 @@ int main(void)
 
 #endif
 		 
-#if 0
-		  ////上报GPS信息
-		 UserSendGps(  ); 
-		 
-		 ///休眠前校准RTC时钟
-		 RtcvRtcCalibrate(  );
+#if 0		 
 		 
 		 OverTime = HAL_GetTick(  ) - SensorTime;
 		 

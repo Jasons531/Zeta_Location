@@ -28,13 +28,20 @@
 
 typedef enum cmd_s
 {
-	MAC = 0,
-	NETIME = 1,
+	MAC 		= 0,
+	NETIME	= 1,
 	COUNTER = 2,
-	RSSI = 3,
+	RSSI 		= 3,
 }cmd_t;
 
-typedef struct d_UserZeta
+typedef enum LowPower_s
+{
+	Free 		= 0,
+	Motion 	= 1,
+	Normal 	= 2,
+}LowPower_t;
+
+typedef struct UserZeta_s
 {
 	/**************ZetaÕ®—∂√¸¡Ó************/
 	uint8_t 		Cmd;
@@ -46,14 +53,13 @@ typedef struct d_UserZeta
 	ZetaState_t Expect_retval;
 }UserZeta_t;
 
-
-typedef struct f_User
+typedef struct User_s
 {
-	uint8_t 	BatState;
-	uint32_t 	SleepTime;
-	bool 			Ack;
-	bool 			Sleep;
-	bool 			TestMode;
+	uint8_t 		BatState;
+	uint32_t 		SleepTime;
+	LowPower_t 	LowPower;
+	bool 				SleepWakeUp;
+	bool 				TestMode;
 }User_t;
 
 extern UserZeta_t UserZetaCheck[];
@@ -72,7 +78,9 @@ void UserWakeupHandle(void);
 
 void UserCheckGps(void);
 
-void UserLocatorReport(uint8_t LocationCmd);
+void UserGetLocation(uint8_t LocationCmd);
+
+void UserLocatReport(void);
 
 void UserSend(Zeta_t *SendBuf);
 

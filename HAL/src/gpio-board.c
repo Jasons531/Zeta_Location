@@ -66,7 +66,7 @@ uint8_t CheckPowerkey(void)
  
 	while(1)																		//死循环，由return结束
 	{	
-		if(wakeup) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
+		if(User.LowPower) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
 		{
 			BoardInitClock(  );
 		}
@@ -96,7 +96,10 @@ uint8_t CheckPowerkey(void)
 	}
 }
 
-bool wakeup_pc = false;
+uint32_t MMa8452qTime = 0;
+uint32_t MotionStopTime = 0;
+
+
 /**
   * @brief  EXTI callback
   * @param  EXTI : EXTI handle
@@ -112,16 +115,27 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			if(CheckPowerkey(		))
 			{
 					DEBUG(2,"关机 \r\n");
+				
+					/*************关闭加速度传感器************/
+					MX_I2C2_Init(  );
+					
+					MMA845xStandby(  );
 					BoardEnterStandby(	);
 			}
 			else
 			{
-				DEBUG(3,"意外中断\r\n");
-				if(wakeup) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
+				DEBUG(2,"意外中断\r\n");
+				if(Normal == User.LowPower) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
 				{
-					SleepTime = GetCurrentSleepRtc(  );
+					if(PATIONNULL != LocatHandles->BreakState(  ))
+					{
+						SleepTime = GetCurrentSleepRtc(  );
+					}
+					else
+						SleepTime = 10;
 										
 					DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
+					
 					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
 					UserIntoLowPower(  );
 				}
@@ -144,40 +158,58 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 		
 		case GPIO_PIN_8:
 			
-		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
-		{
-			if(!wakeup&&!wakeup_pc)
+			if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
 			{
-				DEBUG_APP(2,);
-				MMA8452MultipleRead(  );
-			}
-			else if(wakeup_pc)
-			{
-				wakeup_pc = false;
-				DEBUG_APP(2,);
-	
-				MMA8452MultipleRead(  );
-			}
-			
-		}
+				if(User.SleepWakeUp)
+				{		
+					User.SleepWakeUp = false;				
+					BoardInitClock(  );
+					
+					DEBUG_APP(2,"GPIO_PIN_8 wkup low-power now");
+					BoardInitMcu(  );				
 
-		break;
-		
-		case GPIO_PIN_13:	
-		if(HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13))
-		{
-			DEBUG_APP(3,);
-			if(wakeup)
-			{
-				BoardInitClock(  );
+					MMa8452qTime = HAL_GetTick(  );
+										
+					if(MotionMode != LocatHandles->GetMode(  ))
+					{
+						LocatHandles->SetMode( MotionMode );
+					}
+
+					DEBUG_APP(2,"MMa8452qTime111---- %d",MMa8452qTime);
+				}			
+
+				MMA8452MultipleRead(  );	
 				
-				DEBUG(2,"GPIO_PIN_13 wkup low-power now\r\n");
-				BoardInitMcu(  );				
-				wakeup_pc =true;
-				wakeup = false;			
+				LocationInfor.MoveTimes = FlashRead16(MOVE_CONDITION_ADDR);
+				
+				LocationInfor.StopTimes = FlashRead16(MOVE_STOP_CONDITION_ADDR);
+				
+				DEBUG_APP(2,"BreakState---- %d",LocatHandles->BreakState(  ));
+				if(PATIONNULL != LocatHandles->BreakState(  ))
+				{
+					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.AlarmCycle * 1000) ///防止定位过程，多次开启重新定位标志
+					{
+						DEBUG_APP(2,"---- start: %d-----",User.LowPower);
+					
+						if(Motion != User.LowPower) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+						{
+							LocationInfor.BegainLocat = true;
+							
+							DEBUG_APP(2,"---- BegainLocat -----");
+						}
+						else
+						{
+							LocationInfor.MotionState = Start;
+						}
+					}
+					else
+					{
+						MotionStopTime = HAL_GetTick(  );
+					}
+				}
+				DEBUG_APP(2,"MMa8452qTime %d", HAL_GetTick(  ) - MMa8452qTime);			
 			}
-		}		
-		
+
 		break;
 		
 		case GPIO_PIN_15:

@@ -57,17 +57,21 @@ void MMA8452InterruptPinInit(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE(); 
 
+#if 0	
+	
 	GPIO_InitStruct.Pin = MMA8452INT_WAKE;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; 
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_WAKE_IO, &GPIO_InitStruct);
+	
+#endif
 	
 	GPIO_InitStruct.Pin = MMA8452INT_1;
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; //GPIO_MODE_IT_FALLING
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	HAL_GPIO_Init(MMA8452INT_1_IO, &GPIO_InitStruct);
 
-	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 4, 0);	
+	HAL_NVIC_SetPriority(EXTI4_15_IRQn, 8, 0);	
 	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);		
 }
 
@@ -369,10 +373,10 @@ void MMA8452xInterrupt(void)
 ///运动检测设置START
 	IIC_RegWrite(MA8452Q_ADDR, FF_MT_CFG_1_REG, 0x78); //Enable Latch, Freefall, X-axis, Y-axis and Z-axis ：运动检测
 
-	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x10); ///越高，灵敏度越高
+	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x11); ///越高，灵敏度越高
 	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.0g/0.063g=15.87. 四舍五入为16，阈值设置为10H
 	
-	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 160ms
+	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 240ms
 ///运动检测设置END
 
 	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X0A);// PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败

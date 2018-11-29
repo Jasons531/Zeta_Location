@@ -99,47 +99,79 @@
 #define		QUERY_DEV_INFOR								0XE2
 /**********************下行命令：end*********************/
 
+typedef enum Locatmode_s
+{
+	/*********心跳模式********/
+	HeartMode				= 0,
+	
+	/*********运动模式********/
+	MotionMode			= 1,
+	
+	/*********运动停止模式********/
+	MotionStopMode	=2,
+}Locatmode_t;
+
+typedef enum Motion_s
+{
+	Wait 						= 0,
+	Start 					= 1,
+	Stop						= 2,	
+}Motion_t;
+
 typedef struct LocationI_s
 {
+	/************开始定位************/
+	bool 					BegainLocat;
+
 	//分钟
-	uint16_t 	HeartCycle;
+	uint16_t 			HeartCycle;
 	
 	/************告警周期：0则只上报一次/分钟************/
-	uint8_t 	AlarmCycle;	
+	uint8_t 			AlarmCycle;	
 	
 		/************GPS定位状态************/
-	uint8_t  	GpsStates;
+	uint8_t  			GpsStates;
 	
 	/************GPS定位超时时间/秒************/
-	uint16_t  GpsTime;
+	uint16_t  		GpsTime;
 	
 	/************资产移动条件/秒************/
-	uint8_t	  MoveTimes;
+	uint8_t	  		MoveTimes;
 	
 	/************资产停止条件/秒************/
-	uint8_t	  StopTimes;
+	uint8_t	  		StopTimes;
 	
 	/************资产移动开关：0：不告警，1：告警************/
-	uint8_t   AlarmEnable;
+	uint8_t   		AlarmEnable;
 	
-	uint8_t 	Versions;
+	uint8_t 			Versions;
+	
+	/********************定位器工作模式******************/
+	Locatmode_t 	Mode;
+	
+	/************移动状态************/
+	Motion_t 			MotionState;
 
 }LocationIn_t;
 
-
 typedef struct LocatH_s
 {
- char 		Buf[54];
+	char 					Buf[54];
 	
- uint8_t 	*(*Cmd)(uint8_t *ZRev);
+	uint8_t 			*(*Cmd)( uint8_t *ZRev );
 
- uint8_t 	*(*GetLoca)(char *GpsLocation, uint8_t LocationCmd);
+	uint8_t 			*(*GetLoca)( char *GpsLocation, uint8_t LocationCmd );
 
- void 		(*CheckGps)(LocationIn_t Locat);
+	void 					(*CheckGps)( LocationIn_t Locat );
 
- void 		(*SetState)(uint8_t State);
+	void 					(*SetState)( uint8_t State );
 
- uint8_t 	(*BreakState)( void ); 
+	uint8_t 			(*BreakState)( void ); 
+
+	void 					(*SetMode)(	Locatmode_t Mode );
+	
+	Locatmode_t		(*GetMode)( void );
+	
 }LocatH_t;
 
 extern LocationIn_t LocationInfor;
@@ -148,17 +180,21 @@ extern LocatH_t LocatHandle;
 
 extern LocatH_t *LocatHandles;
 
-void LocationInit(void);
+void LocationInit( void );
 
-extern uint8_t *LocationCmd(uint8_t *ZRev);
+extern uint8_t *LocationCmd( uint8_t *ZRev );
 
-extern uint8_t *GetLocation(char *GpsLocation, uint8_t LocationCmd);
+extern uint8_t *GetLocation( char *GpsLocation, uint8_t LocationCmd );
 
-extern void LocationCheckGps(LocationIn_t Locat);
+extern void LocationCheckGps( LocationIn_t Locat );
 
-extern void LocationSetState(uint8_t State);
+extern void LocationSetState( uint8_t State );
 
 extern uint8_t LocationBreakState( void );
+
+extern void LocationSetMode( Locatmode_t Mode );
+
+extern Locatmode_t LocationGetMode( void );
 
 void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
 

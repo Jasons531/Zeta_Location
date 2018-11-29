@@ -31,8 +31,6 @@ void GpsInit(void)
 	HAL_GPIO_Init(GPS_IO,&GPIO_Initure);
 	
 	MX_USART2_UART_Init(  ); 
-	
-	TimerHwInit(  );
 }
 
 void GpsEnable(void)
@@ -69,9 +67,11 @@ uint8_t GpsSet(void)
 		HAL_NVIC_DisableIRQ(USART2_IRQn);
 		HAL_UART_Transmit(&huart2, (uint8_t *)MTK_HOST, sizeof(MTK_HOST), 0xFFFFFFFF);
 		HAL_NVIC_EnableIRQ(USART2_IRQn);
+		
+		DEBUG_APP(2,);
 		HAL_Delay(1000);	
     GPS_TIME ++;
-		DEBUG(2,"line = %d\r\n",__LINE__);
+		DEBUG_APP(2,);
 	}
 	while(!SetGpsMode.Start && ( GPS_TIME <= 10 ));
     

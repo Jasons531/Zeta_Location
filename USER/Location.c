@@ -19,7 +19,7 @@
 #define					MINUTE							60
 #define 				HOUR								3600
 
-LocationIn_t LocationInfor = {12*HOUR, 5, 0, 2*MINUTE, 5, 5, 1, VERSIOS};
+LocationIn_t LocationInfor = {false, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, VERSIOS, HeartMode, Wait}; //30-2*MINUTE
 
 LocatH_t 	LocatHandle;
 
@@ -36,9 +36,14 @@ void LocationInit( void )
 	LocatHandle.CheckGps 	 = LocationCheckGps;
 	LocatHandle.SetState	 = LocationSetState;
 	LocatHandle.BreakState = LocationBreakState;
+	LocatHandle.SetMode		 = LocationSetMode;
+	LocatHandle.GetMode		 = LocationGetMode;
 	
 	LocatHandles = &LocatHandle;
+	
 	LocatHandles->SetState(PATIONNULL);
+	
+	LocatHandles->SetMode(HeartMode);
 }
 
 /*LocationCmd：定位器下行命令处理
@@ -137,7 +142,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case MOVE_CHECK_MOVE_ENABLE:
-		HeartBuf[1] = LocationInfor.AlarmEnable;	
+		HeartBuf[1] = LocationInfor.AlarmEnable;
 	
 		break;
 		
@@ -263,7 +268,7 @@ void LocationCheckGps(LocationIn_t Locat)
 		 
 			gpsx.gpssta = 0;	
 						 
-			HAL_TIM_Base_Stop_IT(&htim2);
+//			HAL_TIM_Base_Stop_IT(&htim2);
 		}
 	}
 }
@@ -277,13 +282,31 @@ void LocationSetState(uint8_t State)
 	SetGpsMode.LocationState = State;
 }
 
-/*LocationBreakState：设置GPS定位状态
+/*LocationBreakState：获取GPS定位状态
 *参数				 	 			: 无
 *返回				   			：State
 */
 uint8_t LocationBreakState( void )
 {
 	return SetGpsMode.LocationState;
+}
+
+/*LocationSetMode	：设置定位器工作模式
+*参数				 	 		: 定位器工作模式
+*返回				   		：无
+*/
+void LocationSetMode( Locatmode_t Mode )
+{
+	LocationInfor.Mode = Mode;
+}
+
+/*LocationGetMode		：获取定位器工作模式
+*参数				 	 			: 无
+*返回				   			：State
+*/
+Locatmode_t LocationGetMode( void )
+{
+	return LocationInfor.Mode;
 }
 
 /*

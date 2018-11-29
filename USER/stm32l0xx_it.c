@@ -154,11 +154,12 @@ void TIM2_IRQHandler(void)
 	  /* USER CODE END TIM2_IRQn 1 */
 }
 
+//uint32_t SleepTimes = 0;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	Timer2_Counter++;
 	
-	if(Timer2_Counter>20)//50ms/´Î
+	if(Timer2_Counter>5)//200ms/´Î
 	{
 		DEBUG(3,"%s\r\n",__func__);
 		
@@ -169,6 +170,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		
 		Timer2_Counter = 0;
 	}
+	
+	if(Motion == User.LowPower)
+	{
+		if(HAL_GetTick(  )- MotionStopTime > LocationInfor.StopTimes * 1000)
+		{
+			LocationInfor.MotionState = Stop;
+		}
+	}	
 }
 
 
@@ -201,14 +210,14 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 	 // check the clk source and set to full speed if we are coming from sleep mode
 	if( ( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_HSE ) ||
 			( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_MSI ) )
-	{
-		__disable_irq( );
-		
+	{		
 		BoardInitClock(  );
+		
 		BoardInitMcu(  );
 		
-		/** enable irq */
-		__enable_irq( );
+		if(Motion == User.LowPower)
+			User.LowPower = Free;
+		
 		DEBUG(2,"wkup low-power now\r\n");
 	}
 }

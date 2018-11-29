@@ -22,7 +22,7 @@ UserZeta_t UserZetaCheck[] = {
 	{0x13, 1000, Payload}, ///查询网络质量
 };
 
-User_t User = {0, 0, false, false, false};
+User_t User = {0, 0, Free, false, false};
 
 static uint8_t DeviceInfo[4] = {0};
 
@@ -68,13 +68,9 @@ void UserKeyWakeupHandle(void)
 	else
 	{
 		DEBUG(2,"休眠 \r\n");
-		HAL_Delay(1000); ///防止烧写异常
+		HAL_Delay(500); ///防止烧写异常
 		BoardEnterStandby(	);
 	}		
-	
-	///PC13；mma8452q触发
-	
-	///RTC：休眠唤醒
 }
 
 /*UserCheckGps：	用户查询GPS信息
@@ -83,18 +79,20 @@ void UserKeyWakeupHandle(void)
 */
 void UserCheckGps(void)
 {						
-	Gps.Init(  );
-	
-	DEBUG_APP(2,"*** Now Start positioning ***"); 
-	Gps.Set(  );
-	LocatHandles->SetState( PATIONNULL );
+	if(PATIONNULL == LocatHandles->BreakState(  ))
+	{
+		Gps.Init(  );
+		
+		DEBUG_APP(2,"*** Now Start positioning ***"); 
+		Gps.Set(  );
+	}
 }
 
-/*UserLocatorReport：用户定位器信息上报
-*参数：							 无
-*返回值：   			   无
+/*UserGetLocation	：用户获取定位器信息
+*参数							：无
+*返回值						：无
 */
-void UserLocatorReport(uint8_t LocationCmd)
+void UserGetLocation(uint8_t LocationCmd)
 {
 	uint8_t Len = 4;
 	ZetaSendBuf.Buf[0] = 0xff;
@@ -110,6 +108,8 @@ void UserLocatorReport(uint8_t LocationCmd)
 	}
 	else if(LocatHandles->BreakState(  ) == PATIONFAIL)
 	{
+		LocationCmd = (LocationCmd)==0x00?(0x0f):++LocationCmd;
+		
 		ZetaSendBuf.Buf[4] = LocationCmd << 2;
 		
 		ZetaSendBuf.Buf[2] = 5;
@@ -121,6 +121,102 @@ void UserLocatorReport(uint8_t LocationCmd)
 			
 	/********************缓存清除*******************/
 	memset(ZetaSendBuf.Buf, 0, ZetaSendBuf.Len);
+}
+
+/*UserLocatReport	：用户定位器信息上报
+*参数							：无
+*返回值						：无
+*/
+void UserLocatReport(void)
+{
+	DEBUG_APP(2,"work mode = %d AlarmEnable = %d",LocatHandles->GetMode(  ),LocationInfor.AlarmEnable);
+	switch(LocatHandles->GetMode(  ))
+	{
+		case	HeartMode:
+				while(PATIONNULL == LocatHandles->BreakState(  ));
+			
+				UserGetLocation(HEART_REPORT_SUCESS);
+				User.SleepTime = FlashRead32(HEART_CYCLE_ADDR);
+
+				User.LowPower = Normal;	
+				User.SleepWakeUp = true;
+				SetRtcAlarm(120);
+				UserIntoLowPower(  );
+			break;
+		
+		case	MotionMode:
+				if(LocationInfor.AlarmEnable)
+				{
+					DEBUG_APP(2,);
+
+					MMa8452qTime = HAL_GetTick(  );
+										
+					while(!LocationInfor.BegainLocat && (HAL_GetTick(  )-MMa8452qTime < (LocationInfor.AlarmCycle+1) * 1000));
+					
+					if(LocationInfor.MotionState == Stop)
+					{				
+						break;
+					}
+										
+					if(LocationInfor.BegainLocat)
+					{				
+						DEBUG_APP(2,);
+						LocationInfor.BegainLocat = false;
+						
+						LocatHandles->SetState(PATIONNULL);	
+						
+						UserCheckGps(  );			
+						User.LowPower = Motion;
+					}
+					
+					DEBUG_APP(2,"BreakState = %d",LocatHandles->BreakState(  ));
+					
+					while(PATIONNULL == LocatHandles->BreakState(  ));
+					
+					UserGetLocation(ALARM_REP_LOCA_SUCESS);
+					
+					///侦听加速度是否还触发
+					
+					///触发则周期内定时上报：不深度休眠或者1s/次休眠，周期上报数据，即可实时侦探停止模式
+					
+					///没触发，则切换进加速度传感器停止模式
+										
+					User.SleepTime = FlashRead32(ALARM_CYCLE_ADDR);
+					
+					if(0 == User.SleepTime)
+					{					
+						///侦听加速度是否还触发：是进入HeartMode
+						LocatHandles->SetMode( MotionStopMode );
+						
+						///否：进入停止模式
+						
+					}
+
+					DEBUG_APP(2,"GPIO_PIN_8 = %d",HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8));
+				 
+					User.SleepWakeUp = true;
+					SetRtcAlarm(120);
+					UserIntoLowPower(  );
+				}
+			break;
+		
+		case	MotionStopMode:
+			
+					LocatHandles->SetState(PATIONNULL);	
+					UserCheckGps(  );
+		
+					while(PATIONNULL == LocatHandles->BreakState(  ));
+		
+					UserGetLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
+					
+					LocatHandles->SetMode( HeartMode );
+					User.SleepTime = FlashRead32(HEART_CYCLE_ADDR);
+		
+			break;
+		
+		default :
+			break;
+	}
 }
 
 /*UserSend：用户调用Zeta发送函数：注意：发送数据前必须等待模块注册完成，否则发送失败，其它模式默认可直接执行,

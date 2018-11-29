@@ -10,8 +10,6 @@
 */
 #include "board.h"
 
-bool wakeup = false;
-
 /*!
  * Flag to indicate if the MCU is Initialized
  */
@@ -41,24 +39,30 @@ void BoardInitClock( void )
 		McuInitialized = true;	
 	} 
 	else
-	{
-		/* Enable Power Control clock */
+	{		
+				/* Enable Power Control clock */
 		__HAL_RCC_GPIOC_CLK_ENABLE();
 		__HAL_RCC_GPIOH_CLK_ENABLE();
 		__HAL_RCC_GPIOB_CLK_ENABLE();
-		__HAL_RCC_GPIOA_CLK_ENABLE(); ///开启时钟			
-		
-		SystemClockReConfig(  );				
+		__HAL_RCC_GPIOA_CLK_ENABLE(); ///开启时钟	
+		SystemClockReConfig(  );		
 	}
 	
 	/***************串口初始化********************/
-	MX_USART1_UART_Init(  );  
+	MX_USART1_UART_Init(  ); 
 }
 
 void BoardInitMcu( void )
-{		
+{
+	__disable_irq( );
 	MMA845xInit(  );
-
+	
+	/** enable irq */
+	__enable_irq( );
+	
+	TimerHwInit(  );
+	
+	UserCheckGps(  );
 	/****************ADC初始化*******************/
 	MX_ADC_Init(  );
 					
@@ -115,7 +119,7 @@ void BoardDeInitMcu( void )
 
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure); 
 		
-	GPIO_InitStructure.Pin = 0xDFFF;   ///GPIO_PIN_13
+	GPIO_InitStructure.Pin = GPIO_PIN_All;   ///GPIO_PIN_13 0xDFFF
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;
@@ -133,9 +137,7 @@ void BoardDeInitMcu( void )
 	SysTick->CTRL &= ~SysTick_CTRL_CLKSOURCE_Msk | ~SysTick_CTRL_ENABLE_Msk | ~SysTick_CTRL_TICKINT_Msk;
 	
 	/* Disable GPIOs clock */
-//	__HAL_RCC_GPIOA_CLK_DISABLE(	);
 	__HAL_RCC_GPIOB_CLK_DISABLE(	);
-//	__HAL_RCC_GPIOC_CLK_DISABLE();
 	__HAL_RCC_GPIOH_CLK_DISABLE(	);
     
 }
