@@ -112,32 +112,32 @@ void BoardDeInitMcu( void )
 	htim2.State = HAL_TIM_STATE_RESET;
 	
 	/*******************关闭SPI*********************/	
-	GPIO_InitStructure.Pin = 0xFEFE;   ///GPIO_PIN_ll  GPIO_PIN_0	 GPIO_PIN_8  
-	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
+	GPIO_InitStructure.Pin = 0xFEFE;   ///GPIO_PIN_0	 GPIO_PIN_8  
+	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; 
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;
 
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure); 
 		
-	GPIO_InitStructure.Pin = GPIO_PIN_All;   ///GPIO_PIN_13 0xDFFF
-	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; ///low_power,其它较高
+	GPIO_InitStructure.Pin = GPIO_PIN_All;   
+	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG; 
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;
 
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
-					
-  GPIO_InitStructure.Pin = GPIO_PIN_All;  /// PB9：CH_CE(ok) 0xDFFF
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);	
+	HAL_GPIO_Init(GPIOH, &GPIO_InitStructure);
+			
+  GPIO_InitStructure.Pin = 0xFFFD;  /// PB1
 	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStructure.Pull = GPIO_PULLDOWN;
 	GPIO_InitStructure.Speed     = GPIO_SPEED_FREQ_LOW;	
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
-	HAL_GPIO_Init(GPIOH, &GPIO_InitStructure);
               
 	/*********************失能系统定时器************************/							
 	SysTick->CTRL &= ~SysTick_CTRL_CLKSOURCE_Msk | ~SysTick_CTRL_ENABLE_Msk | ~SysTick_CTRL_TICKINT_Msk;
 	
 	/* Disable GPIOs clock */
-	__HAL_RCC_GPIOB_CLK_DISABLE(	);
+	__HAL_RCC_GPIOC_CLK_DISABLE(	);
 	__HAL_RCC_GPIOH_CLK_DISABLE(	);
     
 }

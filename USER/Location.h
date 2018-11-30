@@ -101,14 +101,17 @@
 
 typedef enum Locatmode_s
 {
+	/*********等待模式********/
+	WaitMode				= 0,
+	
 	/*********心跳模式********/
-	HeartMode				= 0,
+	HeartMode				= 1,
 	
 	/*********运动模式********/
-	MotionMode			= 1,
+	MotionMode			= 2,
 	
 	/*********运动停止模式********/
-	MotionStopMode	=2,
+	MotionStopMode	= 3,
 }Locatmode_t;
 
 typedef enum Motion_s

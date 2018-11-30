@@ -66,9 +66,11 @@ uint8_t CheckPowerkey(void)
  
 	while(1)																		//死循环，由return结束
 	{	
-		if(User.LowPower) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
+		if(User.SleepWakeUp) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
 		{
 			BoardInitClock(  );
+			
+			User.SleepWakeUp = false;
 		}
 		/*************** 1S按键延时 ***************/
 		HAL_Delay(10);																//延迟一段时间再检测
@@ -99,7 +101,6 @@ uint8_t CheckPowerkey(void)
 uint32_t MMa8452qTime = 0;
 uint32_t MotionStopTime = 0;
 
-
 /**
   * @brief  EXTI callback
   * @param  EXTI : EXTI handle
@@ -125,28 +126,37 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			else
 			{
 				DEBUG(2,"意外中断\r\n");
-				if(Normal == User.LowPower) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
+				
+				////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
+				if(PATIONNULL != LocatHandles->BreakState(  ))
 				{
-					if(PATIONNULL != LocatHandles->BreakState(  ))
-					{
-						SleepTime = GetCurrentSleepRtc(  );
-					}
-					else
-						SleepTime = 10;
-										
-					DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
-					
-					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
-					UserIntoLowPower(  );
+					SleepTime = GetCurrentSleepRtc(  );
 				}
-			}		
-
+				else
+					SleepTime = 10;
+									
+				DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
+				
+				User.SleepWakeUp = true;
+				
+				LocatHandles->SetMode( WaitMode );
+				
+				SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
+				UserIntoLowPower(  );
+			}
 		break;
 		
 		case GPIO_PIN_1:	///Zeta_Rev_Key
 			
 			if(HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN)) ///防止中断误触发
 			{
+				if(User.SleepWakeUp)
+				{		
+					User.SleepWakeUp = false;				
+					BoardInitClock(  );
+					
+					BoardInitMcu(  );				
+				}		
 				DEBUG_APP(2,"PIN = %d",HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN));
 
 				ZetaHandle.Interrupt(  );	
@@ -162,20 +172,16 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			{
 				if(User.SleepWakeUp)
 				{		
-					User.SleepWakeUp = false;				
+					User.SleepWakeUp = false;									
+					
+					LocatHandles->SetMode( MotionStopMode );
+					
 					BoardInitClock(  );
 					
-					DEBUG_APP(2,"GPIO_PIN_8 wkup low-power now");
 					BoardInitMcu(  );				
 
 					MMa8452qTime = HAL_GetTick(  );
-										
-					if(MotionMode != LocatHandles->GetMode(  ))
-					{
-						LocatHandles->SetMode( MotionMode );
-					}
-
-					DEBUG_APP(2,"MMa8452qTime111---- %d",MMa8452qTime);
+					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");
 				}			
 
 				MMA8452MultipleRead(  );	
@@ -187,24 +193,28 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				DEBUG_APP(2,"BreakState---- %d",LocatHandles->BreakState(  ));
 				if(PATIONNULL != LocatHandles->BreakState(  ))
 				{
-					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.AlarmCycle * 1000) ///防止定位过程，多次开启重新定位标志
+					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
 					{
-						DEBUG_APP(2,"---- start: %d-----",User.LowPower);
-					
-						if(Motion != User.LowPower) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+						DEBUG_APP(2,"---- start: -----");
+
+						if(MotionStopMode == LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
 						{
+							LocatHandles->SetMode( MotionMode );
 							LocationInfor.BegainLocat = true;
 							
 							DEBUG_APP(2,"---- BegainLocat -----");
 						}
 						else
 						{
-							LocationInfor.MotionState = Start;
+							LocationInfor.MotionState = Start; ///定位器一直触发状态，等待周期性上报状态
+							DEBUG_APP(2,);
 						}
 					}
 					else
 					{
+						LocatHandles->SetMode( MotionStopMode );
 						MotionStopTime = HAL_GetTick(  );
+						DEBUG_APP(2,);
 					}
 				}
 				DEBUG_APP(2,"MMa8452qTime %d", HAL_GetTick(  ) - MMa8452qTime);			

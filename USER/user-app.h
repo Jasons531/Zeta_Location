@@ -34,13 +34,6 @@ typedef enum cmd_s
 	RSSI 		= 3,
 }cmd_t;
 
-typedef enum LowPower_s
-{
-	Free 		= 0,
-	Motion 	= 1,
-	Normal 	= 2,
-}LowPower_t;
-
 typedef struct UserZeta_s
 {
 	/**************ZetaÕ®—∂√¸¡Ó************/
@@ -57,7 +50,6 @@ typedef struct User_s
 {
 	uint8_t 		BatState;
 	uint32_t 		SleepTime;
-	LowPower_t 	LowPower;
 	bool 				SleepWakeUp;
 	bool 				TestMode;
 }User_t;

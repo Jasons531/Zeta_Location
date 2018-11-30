@@ -23,7 +23,7 @@
 extern UART_HandleTypeDef 			UartHandle;
 extern RTC_HandleTypeDef 				RtcHandle;
 
-uint32_t SleepTimes = 0;
+
 
 /*******************************************************************************************************************
   * @函数名称		main
@@ -61,47 +61,14 @@ int main(void)
 
 	 UserSetHeart(0x00);
 	 
-//	 ///休眠前校准RTC时钟
-//	 RtcvRtcCalibrate(  );
+	 LocationInfor.MotionState = Wait;
+	 
+	 LocatHandles->SetMode( WaitMode );
 	 
 		while (1)
    {			 
-			UserLocatReport(  );
-		 	 switch(LocationInfor.MotionState)
-			{
-				case Start:
-					LocationInfor.MotionState = Wait;
-					if(PATIONNULL != LocatHandles->BreakState(  )) ///定位完成休眠时间
-					{
-						SleepTimes = GetCurrentSleepRtc(  );
-					}
-					else
-						SleepTimes = 10;
-										
-					DEBUG(2,"AlarmTime = %d \r\n", SleepTimes);
-					
-					User.SleepWakeUp = true;
-					
-					__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_8);
-					DEBUG_APP(2,"GPIO_PIN_8 = %d",HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8));
-									
-					User.SleepWakeUp = true;
-					SetRtcAlarm(SleepTimes); ///闹钟时间-当前时间
-				
-					UserIntoLowPower(  );
-					break;
-				case Stop:
-					LocationInfor.MotionState = Wait;
-					DEBUG_APP(2," ----- MotionState Stop ----- ");
-					HAL_Delay(8000);
-					
-					break;
-				default :
-					break;
-			}
-		 
-		 
-		 	
+			UserLocatReport(  ); 
+		 	 	
 #if 0	 
 			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
 			char GPLL[10];
@@ -156,19 +123,7 @@ int main(void)
 			HAL_Delay(30000);
 
 #endif
-		 
-#if 0		 
-		 
-		 OverTime = HAL_GetTick(  ) - SensorTime;
-		 
-		 OverTime /= 1000;
-		 		 
-		 DEBUG_APP(2,"User.SleepTime = %d OverTime = %d\r\n",User.SleepTime,OverTime);
-		 		 
-		 DEBUG_APP(2,"GetPation = %d\r\n",SetGpsAck.GetPation);
-		 SetRtcAlarm(SleepTime);///4S误差	  (User.SleepTime*60) 
-		 UserIntoLowPower(  );
-#endif		
+
 	 } 
 }
 

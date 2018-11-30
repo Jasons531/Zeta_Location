@@ -203,7 +203,7 @@ void MMA8452MultipleRead(void)
 
 	ZYXDR = IIC_RegRead(MA8452Q_ADDR,STATUS_00_REG);
 	
-	DEBUG(2,"ZYXDR11 = %02x \r\n",ZYXDR);
+	DEBUG(3,"ZYXDR11 = %02x \r\n",ZYXDR);
 	
 	if(ZYXDR&0x08)
 	{	
@@ -216,36 +216,36 @@ void MMA8452MultipleRead(void)
 		if(Xdata>0x0800) /////负数：无符号表达
 		{
 			Xdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"X = -%.3f ",Xdata * 0.001);
+			DEBUG(3,"X = -%.3f ",Xdata * 0.001);
 		}
 		else
-			DEBUG(2,"X = %.3f ",Xdata * 0.001);
+			DEBUG(3,"X = %.3f ",Xdata * 0.001);
 		
 		Ydata = (rdata[2] << 4) | (rdata[3] >> 4);
 				
 		if(Ydata>0x0800) /////负数：无符号表达
 		{
 			Ydata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"Y = -%.3f ",Ydata * 0.001);
+			DEBUG(3,"Y = -%.3f ",Ydata * 0.001);
 		}
 		else
-			DEBUG(2,"Y = %.3f ",Ydata * 0.001);
+			DEBUG(3,"Y = %.3f ",Ydata * 0.001);
 
 		Zdata = (rdata[4] << 4) | (rdata[5] >> 4);
 		
 		if(Zdata>0x0800) /////负数：无符号表达
 		{
 			Zdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"Z = -%.3f \r\n",Zdata * 0.001);
+			DEBUG(3,"Z = -%.3f \r\n",Zdata * 0.001);
 		}
 		else
-			DEBUG(2,"Z = %.3f \r\n",Zdata * 0.001);
+			DEBUG(3,"Z = %.3f \r\n",Zdata * 0.001);
 		
-		DEBUG(2,"data: %d %d %d %d %d %d \r\n",rdata[0],rdata[1],rdata[2],rdata[3],rdata[4],rdata[5]);
+		DEBUG(3,"data: %d %d %d %d %d %d \r\n",rdata[0],rdata[1],rdata[2],rdata[3],rdata[4],rdata[5]);
 		
 		ZYXDR = IIC_RegRead(MA8452Q_ADDR,STATUS_00_REG);
 	
-		DEBUG(2,"ZYXDR22 = %02x \r\n",ZYXDR);
+		DEBUG(3,"ZYXDR22 = %02x \r\n",ZYXDR);
 		
 		///Read Interrupt Source
 		uint8_t data_temp = IIC_RegRead(MA8452Q_ADDR, INT_SOURCE_REG);
@@ -256,12 +256,12 @@ void MMA8452MultipleRead(void)
 			//Read the Motion/Freefall Function to clear the interrupt
 			uint8_t data_temp2 = IIC_RegRead(MA8452Q_ADDR, FF_MT_SRC_1_REG);
 			
-			DEBUG_APP(2,"data_temp = %02x data_temp2 = %02x\r\n",data_temp,data_temp2);
+			DEBUG_APP(3,"data_temp = %02x data_temp2 = %02x\r\n",data_temp,data_temp2);
 		}
 		else if(data_temp==0x20)
 		{
 			uint8_t data_temp3 =IIC_RegRead(MA8452Q_ADDR, 0X1E);
-			DEBUG_APP(2,"data_temp = %02x data_temp3 = %02x\r\n",data_temp,data_temp3);
+			DEBUG_APP(3,"data_temp = %02x data_temp3 = %02x\r\n",data_temp,data_temp3);
 		}
 		
 	}

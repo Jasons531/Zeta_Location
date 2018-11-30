@@ -267,8 +267,6 @@ void LocationCheckGps(LocationIn_t Locat)
 			memset(LocatHandles->Buf, 0, strlen(LocatHandles->Buf));
 		 
 			gpsx.gpssta = 0;	
-						 
-//			HAL_TIM_Base_Stop_IT(&htim2);
 		}
 	}
 }
