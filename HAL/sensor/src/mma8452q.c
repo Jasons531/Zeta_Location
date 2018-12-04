@@ -137,7 +137,7 @@ void MMA845xID(void)
 	uint8_t rdata = 0;
 				
 	HAL_I2C_Mem_Read(&hi2c2,MA8452Q_ADDR+1,wdata,1,&rdata,1,10);  //////ÊÊºÏ16bit¼Ä´æÆ÷	
-	DEBUG(2,"MMA845xID = %02X\r\n", rdata);
+	DEBUG_APP(2,"MMA845xID = %02X\r\n", rdata);
 
 	if(rdata != 0x2A)
 		DEBUG_APP(2,"MMA845x Init Error");

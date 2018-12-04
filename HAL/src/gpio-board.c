@@ -136,11 +136,9 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					SleepTime = 10;
 									
 				DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
-				
-				User.SleepWakeUp = true;
-				
+								
 				LocatHandles->SetMode( WaitMode );
-				
+				DEBUG_APP(2,);
 				SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
 				UserIntoLowPower(  );
 			}
@@ -169,12 +167,16 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 		case GPIO_PIN_8:
 			
 			if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
-			{
+			{			
 				if(User.SleepWakeUp)
 				{		
 					User.SleepWakeUp = false;									
 					
-					LocatHandles->SetMode( MotionStopMode );
+					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+					{
+						LocatHandles->SetMode( MotionStopMode );
+						DEBUG_APP(2,"---- MotionStopMode!!! ---- ");
+					}
 					
 					BoardInitClock(  );
 					
@@ -182,42 +184,39 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 
 					MMa8452qTime = HAL_GetTick(  );
 					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");
-				}			
-
-				MMA8452MultipleRead(  );	
+				}		
 				
 				LocationInfor.MoveTimes = FlashRead16(MOVE_CONDITION_ADDR);
 				
 				LocationInfor.StopTimes = FlashRead16(MOVE_STOP_CONDITION_ADDR);
+				MotionStopTime = HAL_GetTick(  );
 				
-				DEBUG_APP(2,"BreakState---- %d",LocatHandles->BreakState(  ));
-				if(PATIONNULL != LocatHandles->BreakState(  ))
+				if(PATIONNULL != LocatHandles->BreakState(  ))///非GPS定位才开启
 				{
+					MMA8452MultipleRead(  );	
+											
 					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
 					{
-						DEBUG_APP(2,"---- start: -----");
+						DEBUG_APP(3,"---- start: -----");
 
 						if(MotionStopMode == LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
 						{
 							LocatHandles->SetMode( MotionMode );
 							LocationInfor.BegainLocat = true;
 							
+							LocationInfor.MotionState = Active;
 							DEBUG_APP(2,"---- BegainLocat -----");
+							break;
 						}
 						else
 						{
-							LocationInfor.MotionState = Start; ///定位器一直触发状态，等待周期性上报状态
-							DEBUG_APP(2,);
+							LocationInfor.MotionState = MultActive; ///定位器一直触发状态，等待周期性上报状态
+							DEBUG_APP(3,);
+							break;
 						}
 					}
-					else
-					{
-						LocatHandles->SetMode( MotionStopMode );
-						MotionStopTime = HAL_GetTick(  );
-						DEBUG_APP(2,);
-					}
-				}
-				DEBUG_APP(2,"MMa8452qTime %d", HAL_GetTick(  ) - MMa8452qTime);			
+					DEBUG_APP(2,"MMa8452qTime %d", HAL_GetTick(  ) - MMa8452qTime);		
+				}					
 			}
 
 		break;

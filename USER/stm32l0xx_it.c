@@ -170,12 +170,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		
 		Timer2_Counter = 0;
 	}
-	
-	if(MotionMode == LocatHandles->GetMode(  ) || MotionStopMode == LocatHandles->GetMode(  ))
+							
+	if(MotionMode == LocatHandles->GetMode(  )) 
 	{
 		if(HAL_GetTick(  )- MotionStopTime > LocationInfor.StopTimes * 1000)
 		{
-			LocationInfor.MotionState = Stop;
+			LocatHandles->SetMode( MotionStopMode );
+
+			LocationInfor.MotionState = InActive;
 			DEBUG_APP(2,);
 		}
 	}	
@@ -216,11 +218,11 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 		
 		BoardInitMcu(  );
 		
-		if(MotionMode == LocatHandles->GetMode(  ))
-		{
-			LocatHandles->SetMode( WaitMode );	
-		}
-		LocationInfor.MotionState = Wait;
+//		if(MotionMode == LocatHandles->GetMode(  ))
+//		{
+//			LocatHandles->SetMode( WaitMode );	
+//		}
+//		LocationInfor.MotionState = Active;
 		DEBUG(2,"wkup low-power now\r\n");
 	}
 }

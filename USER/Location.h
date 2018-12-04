@@ -116,9 +116,9 @@ typedef enum Locatmode_s
 
 typedef enum Motion_s
 {
-	Wait 						= 0,
-	Start 					= 1,
-	Stop						= 2,	
+	Active 					= 0,
+	MultActive 			= 1,
+	InActive				= 2,	
 }Motion_t;
 
 typedef struct LocationI_s

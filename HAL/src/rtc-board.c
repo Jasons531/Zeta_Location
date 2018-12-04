@@ -206,11 +206,11 @@ uint32_t GetCurrentSleepRtc(void)
 	
 	AlarmTime = RTC_AlarmStruct.AlarmTime.Hours * 36000 + RTC_AlarmStruct.AlarmTime.Minutes * 60 + RTC_AlarmStruct.AlarmTime.Seconds;
 	
-	DEBUG(2,"currenttime %d  hour : %d min : %d second : %d\r\n",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
+	DEBUG_APP(2,"currenttime: %d  hour : %d min : %d second : %d",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
 	
-	DEBUG(2,"AlarmTime %d  hour : %d min : %d second : %d\r\n",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
+	DEBUG_APP(2,"AlarmTime:   %d  hour : %d min : %d second : %d",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
 
-	return 	(AlarmTime >= CurrentRtc)?(AlarmTime - CurrentRtc):10;
+	return 	(AlarmTime > CurrentRtc)?(AlarmTime - CurrentRtc):10;
 }
 
 /*SetRtcAlarm£∫…Ë÷√RTCƒ÷÷”–›√ﬂªΩ–—
@@ -220,6 +220,8 @@ void SetRtcAlarm(uint16_t time)
 	RTC_AlarmTypeDef RTC_AlarmStructure;
 	RTC_TimeTypeDef  RTC_TimeStruct;
 	RTC_DateTypeDef  RTC_DateStruct;
+	
+	HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
  
 	///–›√ﬂ«∞–£◊ºRTC ±÷”
   RtcvRtcCalibrate(  );
@@ -233,14 +235,14 @@ void SetRtcAlarm(uint16_t time)
 
 	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&RtcHandle, &RTC_DateStruct, RTC_FORMAT_BIN);
-	DEBUG(2,"currenttime hour : %d min : %d second : %d\r\n",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
+	DEBUG_APP(2,"currenttime hour : %d min : %d second : %d",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
 
 	RTC_AlarmStructure.AlarmTime.Seconds = (RTC_TimeStruct.Seconds+time)%60;  
 	RTC_AlarmStructure.AlarmTime.Minutes = (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)%60;
 	RTC_AlarmStructure.AlarmTime.Hours = (RTC_TimeStruct.Hours + (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)/60)%24;
 	RTC_AlarmStructure.AlarmTime.SubSeconds = 0;
 	
-	DEBUG(2,"wkuptime    hour : %d min : %d second : %d\r\n",RTC_AlarmStructure.AlarmTime.Hours,RTC_AlarmStructure.AlarmTime.Minutes,RTC_AlarmStructure.AlarmTime.Seconds);
+	DEBUG_APP(2,"wkuptime    hour : %d min : %d second : %d",RTC_AlarmStructure.AlarmTime.Hours,RTC_AlarmStructure.AlarmTime.Minutes,RTC_AlarmStructure.AlarmTime.Seconds);
 
 	RTC_AlarmStructure.AlarmDateWeekDay = RTC_WEEKDAY_MONDAY;
 	RTC_AlarmStructure.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
@@ -255,6 +257,8 @@ void SetRtcAlarm(uint16_t time)
 	}
     
   HAL_NVIC_EnableIRQ(RTC_IRQn);
+	
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 }
 
 /* USER CODE END 1 */

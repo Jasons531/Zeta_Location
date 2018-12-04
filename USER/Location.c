@@ -19,7 +19,7 @@
 #define					MINUTE							60
 #define 				HOUR								3600
 
-LocationIn_t LocationInfor = {false, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, VERSIOS, HeartMode, Wait}; //30-2*MINUTE
+LocationIn_t LocationInfor = {false, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, VERSIOS, HeartMode, InActive}; //30-2*MINUTE
 
 LocatH_t 	LocatHandle;
 
