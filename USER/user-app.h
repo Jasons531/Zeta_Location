@@ -72,6 +72,10 @@ void UserCheckGps(void);
 
 void UserGetLocation(uint8_t LocationCmd);
 
+void UserLocatMotion(void);
+
+void UserLocatMotionStop(void);
+
 void UserLocatReport(void);
 
 void UserSend(Zeta_t *SendBuf);

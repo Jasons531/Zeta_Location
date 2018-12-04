@@ -218,11 +218,6 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 		
 		BoardInitMcu(  );
 		
-//		if(MotionMode == LocatHandles->GetMode(  ))
-//		{
-//			LocatHandles->SetMode( WaitMode );	
-//		}
-//		LocationInfor.MotionState = Active;
 		DEBUG(2,"wkup low-power now\r\n");
 	}
 }
