@@ -150,16 +150,26 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			{
 				if(User.SleepWakeUp)
 				{		
-					User.SleepWakeUp = false;				
 					BoardInitClock(  );
 					
-					BoardInitMcu(  );				
+					BoardInitMcu(  );	
 				}		
 				DEBUG_APP(2,"PIN = %d",HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN));
 
 				ZetaHandle.Interrupt(  );	
 											
 				UserDownCommand(  );
+				
+				if(User.SleepWakeUp)
+				{
+					User.SleepWakeUp = false;				
+
+					uint32_t SleepTime = GetCurrentSleepRtc(  );
+																								
+					DEBUG_APP(2,"AlarmTime = %d ", SleepTime);
+					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
+					UserIntoLowPower(  );
+				}
 			}
 		
 		break;
@@ -172,7 +182,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				{		
 					User.SleepWakeUp = false;									
 					
-					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位
 					{
 						LocatHandles->SetMode( MotionStopMode );
 						DEBUG_APP(2,"---- MotionStopMode!!! ---- ");
@@ -189,7 +199,8 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				LocationInfor.MoveTimes = FlashRead16(MOVE_CONDITION_ADDR);
 				
 				LocationInfor.StopTimes = FlashRead16(MOVE_STOP_CONDITION_ADDR);
-				MotionStopTime = HAL_GetTick(  );
+				
+				MotionStopTime = HAL_GetTick(  ); ///记录停止运动时间
 				
 				if(PATIONNULL != LocatHandles->BreakState(  ))///非GPS定位才开启
 				{
@@ -197,8 +208,6 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 											
 					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
 					{
-						DEBUG_APP(3,"---- start: -----");
-
 						if(MotionStopMode == LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
 						{
 							LocatHandles->SetMode( MotionMode );

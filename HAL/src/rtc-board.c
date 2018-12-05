@@ -222,6 +222,19 @@ void SetRtcAlarm(uint16_t time)
 	RTC_DateTypeDef  RTC_DateStruct;
 	
 	HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+	
+	//关闭RTC相关中断，可能在RTC实验打开了
+	__HAL_RTC_WAKEUPTIMER_DISABLE_IT(&RtcHandle,RTC_IT_WUT);
+	__HAL_RTC_TIMESTAMP_DISABLE_IT(&RtcHandle,RTC_IT_TS);
+	__HAL_RTC_ALARM_DISABLE_IT(&RtcHandle,RTC_IT_ALRA|RTC_IT_ALRB);
+	
+	//清除RTC相关中断标志位
+	__HAL_RTC_ALARM_CLEAR_FLAG(&RtcHandle,RTC_FLAG_ALRAF|RTC_FLAG_ALRBF);
+	__HAL_RTC_TIMESTAMP_CLEAR_FLAG(&RtcHandle,RTC_FLAG_TSF); 
+	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&RtcHandle,RTC_FLAG_WUTF);
+	
+	/* 清除所有唤醒标志位 */
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
  
 	///休眠前校准RTC时钟
   RtcvRtcCalibrate(  );

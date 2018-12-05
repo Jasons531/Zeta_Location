@@ -202,7 +202,7 @@ void BoardEnterStandby(void)
 	HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);
 	HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN2);
 
-//	/* 清除所有唤醒标志位 */
+	/* 清除所有唤醒标志位 */
 	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
   __HAL_RCC_BACKUPRESET_RELEASE();                    //备份区域复位结束
   __HAL_RTC_WRITEPROTECTION_ENABLE(&RtcHandle);     //使能RTC写保护

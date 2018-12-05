@@ -19,7 +19,7 @@
 #define					MINUTE							60
 #define 				HOUR								3600
 
-LocationIn_t LocationInfor = {false, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, VERSIOS, HeartMode, InActive}; //30-2*MINUTE
+LocationIn_t LocationInfor = {false, VERSIOS, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE
 
 LocatH_t 	LocatHandle;
 
@@ -82,7 +82,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case ALARM_SET_CYCLE:	///设置告警周期
-		LocationInfor.AlarmCycle 		= ZRev[1];
+		LocationInfor.AlarmCycle 		= ZRev[ZetaSendBuf.Len++];
 		HeartBuf[ZetaSendBuf.Len++] = LocationInfor.AlarmCycle;
 		
 		///保存flash
@@ -122,7 +122,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		
 		case MOVE_SET_MOVE_CONDITION: ///设置移动判定时间
 		LocationInfor.MoveTimes 		= ZRev[ZetaSendBuf.Len++] << 0;
-		HeartBuf[ZetaSendBuf.Len++] = LocationInfor.MoveTimes;
+		HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.MoveTimes;
 		
 		///保存flash
 		FlashWrite16(MOVE_CONDITION_ADDR,(uint16_t *)&LocationInfor.MoveTimes,1);	
@@ -139,7 +139,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		
 		case MOVE_SET_STOP_CONDITION: ///设置停止移动判定时间
 		LocationInfor.StopTimes 		= ZRev[ZetaSendBuf.Len++] << 0;
-		HeartBuf[ZetaSendBuf.Len++] = LocationInfor.StopTimes;
+		HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.StopTimes;
 		
 		///保存flash
 		FlashWrite16(MOVE_STOP_CONDITION_ADDR,(uint16_t *)&LocationInfor.StopTimes,1);
@@ -155,7 +155,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		
 		case MOVE_SET_MOVE_ENABLE: ///设置告警开关
 		LocationInfor.AlarmEnable 	= ZRev[ZetaSendBuf.Len++] << 0;
-		HeartBuf[ZetaSendBuf.Len++] = LocationInfor.AlarmEnable;
+		HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.AlarmEnable;
 		
 		///保存flash
 		FlashWrite16(MOVE_ENABLE_ADDR,(uint16_t *)&LocationInfor.AlarmEnable,1);	
@@ -175,7 +175,17 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case QUERY_DEV_LOCA:
-			///启动反馈命令: QUERY_FEED_BACK
+		///启动反馈命令: QUERY_FEED_BACK		
+		if(LocatHandles->BreakState(  ) == PATIONDONE)
+		{
+			memcpy1(&HeartBuf[ZetaSendBuf.Len], LocatHandles->GetLoca( LocatHandles->Buf, QUERY_FEED_LOCA_SUCESS ), 8);
+			
+			ZetaSendBuf.Len += 8;
+		}
+		else if(LocatHandles->BreakState(  ) == PATIONFAIL)
+		{			
+			HeartBuf[ZetaSendBuf.Len++] = QUERY_FEED_LOCA_FAIL << 2;
+		}		
 		
 		break;
 		
@@ -187,6 +197,12 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		case QUERY_DEV_INFOR:
 //		HeartBuf[ZetaSendBuf.Len++] = 初始振动开关数值
 //		HeartBuf[ZetaSendBuf.Len++]
+		
+		LocationInfor.HeartCycle 		= FlashRead16(HEART_CYCLE_ADDR);
+
+		LocationInfor.AlarmCycle 		= FlashRead16(ALARM_CYCLE_ADDR);
+		
+		LocationInfor.AlarmEnable 	= FlashRead16(MOVE_ENABLE_ADDR);		
 		
 		HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 8)&0xff;
 		HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 0)&0xff;
@@ -278,7 +294,7 @@ void LocationCheckGps(LocationIn_t Locat)
 {
 	if(SetGpsMode.Gpll)
 	{
-		if(((HAL_GetTick( ) - SetGpsMode.GpsOverTime) > Locat.GpsTime * MSEC) && (LocatHandles->BreakState(  ) == PATIONNULL))  ///GPS 2分钟内定位失败，默认GPS异常不再定位
+		if( ((HAL_GetTick( ) - SetGpsMode.GpsOverTime) > Locat.GpsTime * MSEC) )  ///GPS 2分钟内定位失败，默认GPS异常不再定位 && (LocatHandles->BreakState(  ) == PATIONNULL)
 	 {	 
 			DEBUG(2,"GPS_TIME22 : %d\r\n",HAL_GetTick( ) - SetGpsMode.GpsOverTime);
 			 

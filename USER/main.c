@@ -65,6 +65,8 @@ int main(void)
 	 
 	 LocatHandles->SetMode( WaitMode );
 	 
+	 UserLocationVerion( QUERY_SEND_VER );
+	 
 		while (1)
    {			 
 			UserLocatReport(  ); 

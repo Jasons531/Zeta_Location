@@ -39,13 +39,13 @@
 #define		MOVE_STATIC_LOCA_FAIL					0x04
 
 /************查询反馈，定位成功************/
-#define		QUERY_FEED_LOCA_SUCESS				0X05
+#define		QUERY_FEED_LOCA_SUCESS				0x05
 
 /************查询反馈，定位失败************/
-#define		QUERY_FEED_LOCA_FAIL					0X06
+#define		QUERY_FEED_LOCA_FAIL					0x06
 
 /************发送版本ID：上电第一次发送************/
-#define		QUERY_SEND_VER								0X80	
+#define		QUERY_SEND_VER								0x80	
 
 /**********************上行命令：end*********************/
 
@@ -72,31 +72,31 @@
 #define		MOVE_SET_MOVE_CONDITION				0x50
 	
 /************查询移动条件************/
-#define		MOVE_CHECK_MOVE_CONDITION			0X51
+#define		MOVE_CHECK_MOVE_CONDITION			0x51
 	
 /************设置资产移动停止条件************/
-#define		MOVE_SET_STOP_CONDITION				0X60
+#define		MOVE_SET_STOP_CONDITION				0x60
 	
 /************查询资产移动停止条件************/
-#define		MOVE_CHECK_STOP_CONDITION			0X61
+#define		MOVE_CHECK_STOP_CONDITION			0x61
 	
 /************设置资产移动告警开关************/
-#define		MOVE_SET_MOVE_ENABLE					0X70
+#define		MOVE_SET_MOVE_ENABLE					0x70
 
 /************查询资产移动告警开关************/
-#define		MOVE_CHECK_MOVE_ENABLE				0X71
+#define		MOVE_CHECK_MOVE_ENABLE				0x71
 		
 /************查询版本ID************/
-#define		QUERY_CHECK_VER								0X81
+#define		QUERY_CHECK_VER								0x81
 
 /************查询设备位置************/
-#define		QUERY_DEV_LOCA								0XE0
+#define		QUERY_DEV_LOCA								0xE0
 	
 /************查询振动开关状态************/
-#define		QUERY_OSC_STATE								0XE1
+#define		QUERY_OSC_STATE								0xE1
 
 /************查询设备信息************/
-#define		QUERY_DEV_INFOR								0XE2
+#define		QUERY_DEV_INFOR								0xE2
 /**********************下行命令：end*********************/
 
 typedef enum Locatmode_s
@@ -125,6 +125,8 @@ typedef struct LocationI_s
 {
 	/************开始定位************/
 	bool 					BegainLocat;
+	
+	uint8_t 			Versions;
 
 	//分钟
 	uint16_t 			HeartCycle;
@@ -146,8 +148,6 @@ typedef struct LocationI_s
 	
 	/************资产移动开关：0：不告警，1：告警************/
 	uint8_t   		AlarmEnable;
-	
-	uint8_t 			Versions;
 	
 	/********************定位器工作模式******************/
 	Locatmode_t 	Mode;

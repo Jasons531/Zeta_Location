@@ -216,30 +216,30 @@ void MMA8452MultipleRead(void)
 		if(Xdata>0x0800) /////负数：无符号表达
 		{
 			Xdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(3,"X = -%.3f ",Xdata * 0.001);
+			DEBUG(2,"X = -%.3f ",Xdata * 0.001);
 		}
 		else
-			DEBUG(3,"X = %.3f ",Xdata * 0.001);
+			DEBUG(2,"X = %.3f ",Xdata * 0.001);
 		
 		Ydata = (rdata[2] << 4) | (rdata[3] >> 4);
 				
 		if(Ydata>0x0800) /////负数：无符号表达
 		{
 			Ydata = 0x0f00 - 0x0800 + 1;
-			DEBUG(3,"Y = -%.3f ",Ydata * 0.001);
+			DEBUG(2,"Y = -%.3f ",Ydata * 0.001);
 		}
 		else
-			DEBUG(3,"Y = %.3f ",Ydata * 0.001);
+			DEBUG(2,"Y = %.3f ",Ydata * 0.001);
 
 		Zdata = (rdata[4] << 4) | (rdata[5] >> 4);
 		
 		if(Zdata>0x0800) /////负数：无符号表达
 		{
 			Zdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(3,"Z = -%.3f \r\n",Zdata * 0.001);
+			DEBUG(2,"Z = -%.3f \r\n",Zdata * 0.001);
 		}
 		else
-			DEBUG(3,"Z = %.3f \r\n",Zdata * 0.001);
+			DEBUG(2,"Z = %.3f \r\n",Zdata * 0.001);
 		
 		DEBUG(3,"data: %d %d %d %d %d %d \r\n",rdata[0],rdata[1],rdata[2],rdata[3],rdata[4],rdata[5]);
 		
@@ -251,8 +251,7 @@ void MMA8452MultipleRead(void)
 		uint8_t data_temp = IIC_RegRead(MA8452Q_ADDR, INT_SOURCE_REG);
 
 		if(data_temp==0x04)
-		{
-		
+		{	
 			//Read the Motion/Freefall Function to clear the interrupt
 			uint8_t data_temp2 = IIC_RegRead(MA8452Q_ADDR, FF_MT_SRC_1_REG);
 			
@@ -262,8 +261,7 @@ void MMA8452MultipleRead(void)
 		{
 			uint8_t data_temp3 =IIC_RegRead(MA8452Q_ADDR, 0X1E);
 			DEBUG_APP(3,"data_temp = %02x data_temp3 = %02x\r\n",data_temp,data_temp3);
-		}
-		
+		}		
 	}
 }
 
@@ -311,31 +309,31 @@ void MMA845xCorrectReg(void)
 	{
 		x_value.Word= (~x_value.Word +1)>>4;
 		X_cal= X_cal + x_value.Word/2;
-		}
-		else
-		{
+	}
+	else
+	{
 		X_cal= X_cal + ((~x_value.Word+1)>>4)/2;
-		}
-		if (y_value.Byte.hi> 0x7F)
-		{
+	}
+	if (y_value.Byte.hi> 0x7F)
+	{
 		y_value.Word= (~y_value.Word +1)>>4;
 		Y_cal= Y_cal + y_value.Word/2;
-		}
-		else
-		{
+	}
+	else
+	{
 		Y_cal= Y_cal + ((~y_value.Word+1)>>4)/2;
-		}
-		if (z_value.Byte.hi> 0x7F)
-		{
+	}
+	if (z_value.Byte.hi> 0x7F)
+	{
 		z_value.Word= (~z_value.Word +1)>>4;
 		Z_cal+=(1024 + z_value.Word)/2;
-		}
-		else
-		{
+	}
+	else
+	{
 		Z_cal+=(int)(1024- (z_value.Word>>4))/2;
 		if (Z_cal<0)
 		{
-		Z_cal+=256;
+			Z_cal+=256;
 		}
 	}
 		
@@ -373,10 +371,10 @@ void MMA8452xInterrupt(void)
 ///运动检测设置START
 	IIC_RegWrite(MA8452Q_ADDR, FF_MT_CFG_1_REG, 0x78); //Enable Latch, Freefall, X-axis, Y-axis and Z-axis ：运动检测
 
-	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x11); ///越高，灵敏度越高
+	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x10); ///越高，灵敏度越高
 	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.0g/0.063g=15.87. 四舍五入为16，阈值设置为10H
 	
-	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 240ms
+	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 160ms
 ///运动检测设置END
 
 	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X0A);// PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败

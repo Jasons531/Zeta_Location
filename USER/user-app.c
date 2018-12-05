@@ -87,11 +87,38 @@ void UserCheckGps(void)
 	}
 }
 
-/*UserGetLocation	：用户获取定位器信息
-*参数							：无
-*返回值						：无
+/*UserLocationVerion	：用户定位器软件版本
+*参数									：无
+*返回值								：无  
 */
-void UserGetLocation(uint8_t LocationCmd)
+void UserLocationVerion(uint8_t VerCmd)
+{
+	uint8_t Len = 4;
+	ZetaSendBuf.Buf[0] = 0xff;
+	ZetaSendBuf.Buf[1] = 0x00;
+	
+	ZetaSendBuf.Buf[3] = 0x02;
+	
+	ZetaSendBuf.Buf[4] = VerCmd;
+	
+	ZetaSendBuf.Buf[5] = LocationInfor.Versions;
+			
+	ZetaSendBuf.Buf[2] = Len + 2;
+	
+	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
+	
+	DEBUG_APP(2,"Versions: 0X%02X : ", LocationInfor.Versions);
+	UserSend(&ZetaSendBuf);
+			
+	/********************缓存清除*******************/
+	memset(ZetaSendBuf.Buf, 0, ZetaSendBuf.Len);
+}
+
+/*UserSendLocation	：用户获取定位器信息
+*参数								：无
+*返回值							：无
+*/
+void UserSendLocation(uint8_t LocationCmd)
 {
 	uint8_t Len = 4;
 	ZetaSendBuf.Buf[0] = 0xff;
@@ -191,7 +218,7 @@ void UserLocatMotion(void)
 									
 			while(PATIONNULL == LocatHandles->BreakState(  ));
 			
-			UserGetLocation(ALARM_REP_LOCA_SUCESS);
+			UserSendLocation(ALARM_REP_LOCA_SUCESS);
 			
 			///侦听加速度停止
 			if(LocationInfor.MotionState == InActive)
@@ -248,7 +275,7 @@ void UserLocatMotionStop(void)
 	
 				while(PATIONNULL == LocatHandles->BreakState(  ));
 	
-				UserGetLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
+				UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
 				LocatHandles->SetMode( WaitMode );
 			}
 			else
@@ -263,7 +290,9 @@ void UserLocatMotionStop(void)
 				UserIntoLowPower(  );
 			}												
 		}
-	}					
+	}		
+	else
+		return;
 }
 
 /*UserLocatReport	：用户定位器信息上报
@@ -287,7 +316,7 @@ void UserLocatReport(void)
 		
 				DEBUG_APP(2,"---- HeartMode ----");
 		
-				UserGetLocation(HEART_REPORT_SUCESS);
+				UserSendLocation(HEART_REPORT_SUCESS);
 				User.SleepTime = FlashRead16(HEART_CYCLE_ADDR);
 		
 				LocatHandles->SetMode( WaitMode );
@@ -427,13 +456,10 @@ void UserDownCommand(void)
 	ZetaSendBuf.Buf[3] = 0x02;
 	
 //	ZetaHandle.DownCommand(ZetaRecviceBuf.RevBuf);
-//	memcpy1(&ZetaSendBuf.Buf[4], LocatHandles->Cmd(ZetaRecviceBuf.RevBuf), \
-//	strlen((char *)LocatHandles->Cmd(ZetaRecviceBuf.RevBuf)));
 	
 	memcpy1(&ZetaSendBuf.Buf[4], LocatHandles->Cmd(ZetaRecviceBuf.RevBuf), \
 	ZetaSendBuf.Len);
 
-//	ZetaSendBuf.Buf[2] = 0x04 + strlen((char *)LocatHandles->Cmd(ZetaRecviceBuf.RevBuf)); 
 	ZetaSendBuf.Buf[2] = 0x04 + ZetaSendBuf.Len; 
 
 	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];

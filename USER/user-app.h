@@ -28,30 +28,30 @@
 
 typedef enum cmd_s
 {
-	MAC 		= 0,
-	NETIME	= 1,
-	COUNTER = 2,
-	RSSI 		= 3,
+	MAC 						= 0,
+	NETIME					= 1,
+	COUNTER 				= 2,
+	RSSI 						= 3,
 }cmd_t;
 
 typedef struct UserZeta_s
 {
 	/**************Zeta通讯命令************/
-	uint8_t 		Cmd;
+	uint8_t 				Cmd;
 	
 	/**************Zeta通讯超时************/
-	uint32_t		Timeout;
+	uint32_t				Timeout;
 	
 	/**************Zeta通讯回复状态************/
-	ZetaState_t Expect_retval;
+	ZetaState_t 		Expect_retval;
 }UserZeta_t;
 
 typedef struct User_s
 {
-	uint8_t 		BatState;
-	uint32_t 		SleepTime;
-	bool 				SleepWakeUp;
-	bool 				TestMode;
+	uint8_t 				BatState;
+	uint32_t 				SleepTime;
+	bool 						SleepWakeUp;
+	bool 						TestMode;
 }User_t;
 
 extern UserZeta_t UserZetaCheck[];
@@ -60,45 +60,47 @@ extern uint8_t DeviceInfo[4];
 
 extern User_t User;
 
-void UserKeyPinInit(void);
+void 	 UserKeyPinInit(void);
 
-void UserKeyWakeupHandle(void);
+void	 UserKeyWakeupHandle(void);
 
-void UserPeriPheralInit(void);
+void	 UserPeriPheralInit(void);
 
-void UserWakeupHandle(void);
+void	 UserWakeupHandle(void);
 
-void UserCheckGps(void);
+void	 UserCheckGps(void);
 
-void UserGetLocation(uint8_t LocationCmd);
+void	 UserLocationVerion(uint8_t VerCmd);
 
-void UserLocatMotion(void);
+void	 UserSendLocation(uint8_t LocationCmd);
 
-void UserLocatMotionStop(void);
+void	 UserLocatMotion(void);
 
-void UserLocatReport(void);
+void	 UserLocatMotionStop(void);
 
-void UserSend(Zeta_t *SendBuf);
+void	 UserLocatReport(void);
 
-void UserSendGps(LocationIn_t LocatCmd);
+void	 UserSend(Zeta_t *SendBuf);
 
-void UserSendTest(void);
+void	 UserSendGps(LocationIn_t LocatCmd);
 
-void UserDownCommand(void);
+void	 UserSendTest(void);
 
-void UserCheckCmd(UserZeta_t *UserZetaCheckCmd);
+void	 UserDownCommand(void);
 
-void UserSetHeart(uint8_t mode);
+void	 UserCheckCmd(UserZeta_t *UserZetaCheckCmd);
 
-void UserSetTimer(ZetaTimer_t Timer);
+void	 UserSetHeart(uint8_t mode);
 
-void UserCloseTimer(ZetaTimer_t Timer);
+void	 UserSetTimer(ZetaTimer_t Timer);
 
-void UserIntoLowPower(void);
+void	 UserCloseTimer(ZetaTimer_t Timer);
 
-void String_Conversion(char *str, uint8_t *src, uint8_t len);
+void	 UserIntoLowPower(void);
 
-void UserReadFlash(void);
+void	 String_Conversion(char *str, uint8_t *src, uint8_t len);
+
+void	 UserReadFlash(void);
 
 #endif /* __USER_APP_H */
 
