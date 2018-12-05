@@ -63,7 +63,7 @@ int main(void)
 
 	 UserSetHeart(0x00);
 	 
-	 LocationInfor.MotionState = InActive;
+	 LocationInfor.MotionState = Invalid;
 	 
 	 LocatHandles->SetMode( WaitMode );
 	 
