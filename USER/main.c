@@ -52,6 +52,8 @@ int main(void)
 		
 	/**************电源开关处理************/
 	 UserKeyWakeupHandle(  );	
+	
+	 UserCheckGps(  );
 											 	 						
 	 UserCheckCmd(&UserZetaCheck[MAC]);
 

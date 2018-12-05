@@ -310,7 +310,17 @@ void UserLocatReport(void)
 			
 			DEBUG_APP(2,"---- waiting %d----", LocationInfor.MotionState);
 	
+			uint32_t SleepTime = GetCurrentSleepRtc(  );
+		
 			LocatHandles->SetMode( HeartMode );
+		
+			if(10 != SleepTime && User.SleepWakeUp) ///在心跳休眠周期内，则再次休眠
+			{
+				DEBUG_APP(2,"---- Sleep Again ----");
+				
+				SetRtcAlarm(SleepTimes); ///闹钟时间-当前时间
+				UserIntoLowPower(  );
+			}		
 			
 			break;
 		
@@ -324,7 +334,7 @@ void UserLocatReport(void)
 		
 				LocatHandles->SetMode( WaitMode );
 				DEBUG_APP(2,);
-				SetRtcAlarm(120);
+				SetRtcAlarm(600);
 				UserIntoLowPower(  );
 			break;
 		

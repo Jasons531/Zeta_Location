@@ -127,20 +127,25 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			{
 				DEBUG(2,"意外中断\r\n");
 				
-				////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态
-				if(PATIONNULL != LocatHandles->BreakState(  ))
+				////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态			
+				if(User.SleepWakeUp)
 				{
-					SleepTime = GetCurrentSleepRtc(  );
-				}
-				else
-					SleepTime = 10;
+					User.SleepWakeUp = false;
+					
+					if(PATIONNULL != LocatHandles->BreakState(  ))
+					{
+						SleepTime = GetCurrentSleepRtc(  );
+					}
+					else
+						SleepTime = 10;
+										
+					DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
 									
-				DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
-								
-				LocatHandles->SetMode( WaitMode );
-				DEBUG_APP(2,);
-				SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
-				UserIntoLowPower(  );
+					LocatHandles->SetMode( WaitMode );
+					DEBUG_APP(2,);
+					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
+					UserIntoLowPower(  );
+				}
 			}
 		break;
 		

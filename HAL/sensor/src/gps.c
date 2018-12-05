@@ -31,6 +31,9 @@ void GpsInit(void)
 	HAL_GPIO_Init(GPS_IO,&GPIO_Initure);
 	
 	MX_USART2_UART_Init(  ); 
+	
+	SetGpsMode.Start = false;
+	SetGpsMode.Gpll = false;
 }
 
 void GpsEnable(void)
@@ -79,7 +82,8 @@ uint8_t GpsSet(void)
 	{
 		DEBUG_ERROR(2,"Hardware_Exist_GPS ERROR\r\n");
 		return 0;
-	}	
+	}
+	
 	if(SetGpsMode.Start)
 	{
 		do

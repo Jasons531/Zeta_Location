@@ -342,15 +342,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				{
 					DEBUG_APP(2, "PosfixCounter = %d",PosfixCounter);
 					PosfixCounter++;
+					SetGpsMode.GpsOverTime = HAL_GetTick( );  ///记录GPS定位时间
 					
 					if(PosfixCounter>=10)
 					{
 						PosfixCounter = 0;
 						Gps.Disable(  );
 						SetGpsMode.LocationState = PATIONDONE;
-					}
-					
-					memcpy(LocatHandles->Buf, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
+						
+						memcpy(LocatHandles->Buf, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
+					}				
 				}
 				else if(UART_RX_DATA2.USART_RX_BUF[UART_RX_DATA2.USART_RX_Len-6] == 'V')
 				{

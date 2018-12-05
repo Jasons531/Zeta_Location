@@ -62,7 +62,6 @@ void BoardInitMcu( void )
 	
 	TimerHwInit(  );
 	
-	UserCheckGps(  );
 	/****************ADC≥ı ºªØ*******************/
 	MX_ADC_Init(  );
 					
