@@ -121,6 +121,9 @@ void UserLocationVerion(uint8_t VerCmd)
 void UserSendLocation(uint8_t LocationCmd)
 {
 	uint8_t Len = 4;
+	
+	memset(ZetaSendBuf.Buf, 0, 20);
+	
 	ZetaSendBuf.Buf[0] = 0xff;
 	ZetaSendBuf.Buf[1] = 0x00;
 	

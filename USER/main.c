@@ -71,8 +71,9 @@ int main(void)
    {			 
 			UserLocatReport(  ); 
 		 	 	
-#if 0	 
-			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
+#if 0 
+//			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
+			char str[100] = "$GPGLL,2232.7891,N,11356.6350,E,070245.000,A,A*5B";
 			char GPLL[10];
 			char N_Data[15] ;
 			char N;

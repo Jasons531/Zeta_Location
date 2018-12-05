@@ -163,7 +163,7 @@ typedef struct LocatH_s
 	
 	uint8_t 			*(*Cmd)( uint8_t *ZRev );
 
-	uint8_t 			*(*GetLoca)( char *GpsLocation, uint8_t LocationCmd );
+	uint8_t	 			*(*GetLoca)( char *GpsLocation, uint8_t LocationCmd );
 
 	void 					(*CheckGps)( LocationIn_t Locat );
 
@@ -177,29 +177,29 @@ typedef struct LocatH_s
 	
 }LocatH_t;
 
-extern LocationIn_t LocationInfor;
+extern 	LocationIn_t 	LocationInfor;
 
-extern LocatH_t LocatHandle;
+extern 	LocatH_t 			LocatHandle;
 
-extern LocatH_t *LocatHandles;
+extern 	LocatH_t 			*LocatHandles;
 
-void LocationInit( void );
+extern	void 					LocationInit( void );
 
-extern uint8_t *LocationCmd( uint8_t *ZRev );
+extern 	uint8_t 			*LocationCmd( uint8_t *ZRev );
 
-extern uint8_t *GetLocation( char *GpsLocation, uint8_t LocationCmd );
+extern 	uint8_t				*GetLocation( char *GpsLocation, uint8_t LocationCmd );
 
-extern void LocationCheckGps( LocationIn_t Locat );
+extern 	void					LocationCheckGps( LocationIn_t Locat );
 
-extern void LocationSetState( uint8_t State );
+extern 	void 					LocationSetState( uint8_t State );
 
-extern uint8_t LocationBreakState( void );
+extern 	uint8_t 			LocationBreakState( void );
 
-extern void LocationSetMode( Locatmode_t Mode );
+extern 	void 					LocationSetMode( Locatmode_t Mode );
 
-extern Locatmode_t LocationGetMode( void );
+extern 	Locatmode_t 	LocationGetMode( void );
 
-void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
+extern	void 					memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
 
 
 

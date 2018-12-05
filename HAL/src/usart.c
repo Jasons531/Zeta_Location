@@ -250,6 +250,8 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
   }
 } 
 
+uint8_t PosfixCounter = 0;
+
 /* USER CODE BEGIN 1 */
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
@@ -327,7 +329,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				UART_RX_DATA2.Rx_State = false;
 				
 				int8_t GLL_State = 0;
-				uint8_t PosfixCounter = 0;
 				
 			 if(GLL_State == strcmp((char *)UART_RX_DATA2.USART_RX_BUF, "$PMTK010,002*2D"))
 					SetGpsMode.Start = true;
@@ -339,17 +340,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 				if(UART_RX_DATA2.USART_RX_BUF[UART_RX_DATA2.USART_RX_Len-6] == 'A')
 				{
+					DEBUG_APP(2, "PosfixCounter = %d",PosfixCounter);
 					PosfixCounter++;
 					
-					if(PosfixCounter>=20)
+					if(PosfixCounter>=10)
 					{
-							Gps.Disable(  );
-						  SetGpsMode.LocationState = PATIONDONE;
+						PosfixCounter = 0;
+						Gps.Disable(  );
+						SetGpsMode.LocationState = PATIONDONE;
 					}
 					
 					memcpy(LocatHandles->Buf, UART_RX_DATA2.USART_RX_BUF, UART_RX_DATA2.USART_RX_Len);
-//					SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\r';
-//          SetGpsMode.GLL[UART_RX_DATA2.USART_RX_Len++]='\n';
 				}
 				else if(UART_RX_DATA2.USART_RX_BUF[UART_RX_DATA2.USART_RX_Len-6] == 'V')
 				{

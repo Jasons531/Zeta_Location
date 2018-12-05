@@ -19,7 +19,7 @@
 #define					MINUTE							60
 #define 				HOUR								3600
 
-LocationIn_t LocationInfor = {false, VERSIOS, 12*HOUR, 5, 0, 0.5*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE
+LocationIn_t LocationInfor = {false, VERSIOS, 12*HOUR, 5, 0, 2*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE
 
 LocatH_t 	LocatHandle;
 
@@ -177,9 +177,9 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		case QUERY_DEV_LOCA:
 		///启动反馈命令: QUERY_FEED_BACK		
 		if(LocatHandles->BreakState(  ) == PATIONDONE)
-		{
+		{			
 			memcpy1(&HeartBuf[ZetaSendBuf.Len], LocatHandles->GetLoca( LocatHandles->Buf, QUERY_FEED_LOCA_SUCESS ), 8);
-			
+						
 			ZetaSendBuf.Len += 8;
 		}
 		else if(LocatHandles->BreakState(  ) == PATIONFAIL)
@@ -226,19 +226,21 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 */
 uint8_t *GetLocation(char *GpsLocation, uint8_t LocationCmd)
 {
-	char GPLL[10] = {0};
-	char NorthLat[15] = {0};
-	char EastLot[15] = {0};
+	char		GPLL[10] = {0};
+	char 		NorthLat[15] = {0};
+	char 		EastLot[15] = {0};
 
-	char Nstate = 0;
-	char Estate = 0;
+	char 		Nstate = 0;
+	char 		Estate = 0;
 
-	double data_N = 0;
-	double data_E = 0;
+	double 	data_N = 0;
+	double 	data_E = 0;
 	
 	uint8_t len = 0;
 	
-	uint8_t *GpsBuf;
+	uint8_t BufTemp[8] = {0};
+	
+	uint8_t *GpsBuf = BufTemp; ///赋地址，直接传递会出问题
 
 	sscanf(GpsLocation, "%[^,]%*[,] %[^,]%*[,] %[^,]%*[,] %[^,]%*[,] %[^,]%*[,]", GPLL, \
 	NorthLat, &Nstate, EastLot, &Estate);     ////取数到,截止，同时过滤,
@@ -269,17 +271,19 @@ uint8_t *GetLocation(char *GpsLocation, uint8_t LocationCmd)
 	SetGpsMode.NorthSpend = data_N * 10000;
 	SetGpsMode.EastSpend = data_E * 10000;
 	
-	GpsBuf[len++] = (LocationCmd << 2) | (SetGpsMode.West << 1) | (SetGpsMode.South << 0);
-					
-	GpsBuf[len++] = (SetGpsMode.EastSpend >> 20)&0xFF; ///28bit取高8bit，注意非32bit取运算
-	GpsBuf[len++] = (SetGpsMode.EastSpend >> 12)&0xFF;
-	GpsBuf[len++] = (SetGpsMode.EastSpend >> 4)&0xFF;
+	DEBUG_APP(3,"LocationCmd = %02x %02x %02x %02x",LocationCmd, (LocationCmd << 2), (SetGpsMode.West << 1),(SetGpsMode.South << 0));
 	
-	GpsBuf[len++] = (((SetGpsMode.EastSpend >> 0) & 0xF) << 4) | ((SetGpsMode.NorthSpend >> 24) & 0xF); ///28bit取高4bit
+	BufTemp[len++] = (LocationCmd << 2) | (SetGpsMode.West << 1) | (SetGpsMode.South << 0);
+						
+	BufTemp[len++] = (SetGpsMode.EastSpend >> 20)&0xFF; ///28bit取高8bit，注意非32bit取运算
+	BufTemp[len++] = (SetGpsMode.EastSpend >> 12)&0xFF;
+	BufTemp[len++] = (SetGpsMode.EastSpend >> 4)&0xFF;
 	
-	GpsBuf[len++] = (SetGpsMode.NorthSpend >> 16) & 0xFF;
-	GpsBuf[len++] = (SetGpsMode.NorthSpend >> 8) & 0xFF;
-	GpsBuf[len++] = (SetGpsMode.NorthSpend >> 0) & 0xFF;	
+	BufTemp[len++] = (((SetGpsMode.EastSpend >> 0) & 0xF) << 4) | ((SetGpsMode.NorthSpend >> 24) & 0xF); ///28bit取高4bit
+	
+	BufTemp[len++] = (SetGpsMode.NorthSpend >> 16) & 0xFF;
+	BufTemp[len++] = (SetGpsMode.NorthSpend >> 8) & 0xFF;
+	BufTemp[len++] = (SetGpsMode.NorthSpend >> 0) & 0xFF;	
 	
 	DEBUG_APP(2,"E_Data = %.4f N_Data = %.4f %d %d\r\n",data_N, data_E, SetGpsMode.NorthSpend, SetGpsMode.EastSpend);
 	
@@ -293,20 +297,21 @@ uint8_t *GetLocation(char *GpsLocation, uint8_t LocationCmd)
 void LocationCheckGps(LocationIn_t Locat)
 {
 	if(SetGpsMode.Gpll)
-	{
+	{	
+		DEBUG_APP(2,"Locat.GpsTime = %d",Locat.GpsTime);
 		if( ((HAL_GetTick( ) - SetGpsMode.GpsOverTime) > Locat.GpsTime * MSEC) )  ///GPS 2分钟内定位失败，默认GPS异常不再定位 && (LocatHandles->BreakState(  ) == PATIONNULL)
-	 {	 
+		{	 
 			DEBUG(2,"GPS_TIME22 : %d\r\n",HAL_GetTick( ) - SetGpsMode.GpsOverTime);
-			 
+
 			LocatHandles->SetState( PATIONFAIL );
-		
+
 			Gps.Disable(  ); ///关闭GPS
-			 
+
 			SetGpsMode.Start = false;
-		  SetGpsMode.Gpll = false;
+			SetGpsMode.Gpll = false;
 
 			memset(LocatHandles->Buf, 0, strlen(LocatHandles->Buf));
-		 
+
 			gpsx.gpssta = 0;	
 		}
 	}
