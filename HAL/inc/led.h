@@ -12,6 +12,13 @@
 #ifndef __LED_H
 #define __LED_H
 
+#define LED_PORT			GPIOB
+
+#define LED_RED				GPIO_PIN_6
+
+#define LED_GREEN			GPIO_PIN_5
+
+
 #include <stdint.h>
 #include "timer.h"
 
@@ -24,29 +31,31 @@ typedef enum ledStates
     Receive = 4,
 }LedStates_t;
 
-extern LedStates_t LedStates;
+extern LedStates_t 	LedStates;
 
-extern LedStates_t LedSaveState;
+extern LedStates_t 	LedSaveState;
 
-void SetLedStates(uint8_t States);
+extern void 				SetLedStates(uint8_t States);
 
-LedStates_t GetLedStates(void);
+extern LedStates_t 	GetLedStates(void);
 
-void LedInit(void);
+extern void 				LedInit(void);
 
-void LedOn(void);
+extern void 				PowerOn(void);
 
-void LedOff(void);
+extern void 				PowerOff(void);
 
-void LedToggle(void);
+extern void 				LedOn(void);
 
-void LedSendSucess(int8_t Counter);
+extern void 				LedOff(void);
 
-void LedSendFail(int8_t Counter);
+extern void 				LedToggle(void);
 
-void LedRev(int8_t Counter);
+extern void 				LedSendSucess(int8_t Counter);
 
-void LedDisplay(void);
+extern void 				LedSendFail(int8_t Counter);
+
+extern void 				LedRev(int8_t Counter);
 
 
 #endif /* __LED_H */

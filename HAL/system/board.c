@@ -62,6 +62,8 @@ void BoardInitMcu( void )
 	
 	TimerHwInit(  );
 	
+	LedInit(  );
+	
 	/****************ADC≥ı ºªØ*******************/
 	MX_ADC_Init(  );
 					

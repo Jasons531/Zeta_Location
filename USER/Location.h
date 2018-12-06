@@ -19,6 +19,11 @@
 #include "stm32l0xx_hal.h"
 #include "zeta.h"
 
+#define 	VERSIOS												0x01
+#define		MSEC													1000
+#define		MINUTE												60
+#define 	HOUR													60
+
 /**********************上行命令：start*********************//*
 ************心跳上报，定位成功************/
 #define 	HEART_REPORT_SUCESS						0x00
@@ -112,6 +117,8 @@ typedef enum Locatmode_s
 	
 	/*********运动停止模式********/
 	MotionStopMode	= 3,
+	
+	QueryLocaMode		= 4,
 }Locatmode_t;
 
 typedef enum Motion_s
@@ -130,25 +137,22 @@ typedef struct LocationI_s
 	uint8_t 			Versions;
 
 	//分钟
-	uint16_t 			HeartCycle;
+	uint16_t 			HeartCycle; ///12H
 	
 	/************告警周期：0则只上报一次/分钟************/
-	uint8_t 			AlarmCycle;	
-	
-		/************GPS定位状态************/
-	uint8_t  			GpsStates;
+	uint8_t 			AlarmCycle;	///5MIN
 	
 	/************GPS定位超时时间/秒************/
-	uint16_t  		GpsTime;
+	uint16_t  		GpsTime;   ///120s
 	
 	/************资产移动条件/秒************/
-	uint8_t	  		MoveTimes;
+	uint8_t	  		MoveTimes; ///5s
 	
 	/************资产停止条件/秒************/
-	uint8_t	  		StopTimes;
+	uint8_t	  		StopTimes; ///5s
 	
 	/************资产移动开关：0：不告警，1：告警************/
-	uint8_t   		AlarmEnable;
+	uint8_t   		AlarmEnable; ///1
 	
 	/********************定位器工作模式******************/
 	Locatmode_t 	Mode;
@@ -160,7 +164,7 @@ typedef struct LocationI_s
 
 typedef struct LocatH_s
 {
-	char 					Buf[54];
+	char 					Buf[128];
 	
 	uint8_t 			*(*Cmd)( uint8_t *ZRev );
 

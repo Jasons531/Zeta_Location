@@ -54,15 +54,39 @@ void LedInit(void)
 	GPIO_InitTypeDef GPIO_Initure;
 	__HAL_RCC_GPIOC_CLK_ENABLE(  );          
 
-	GPIO_Initure.Pin=LED_PIN;  
+	GPIO_Initure.Pin=LED_RED|LED_GREEN;  
 	GPIO_Initure.Mode=GPIO_MODE_OUTPUT_PP;  
 	GPIO_Initure.Pull=GPIO_PULLUP;          
 	GPIO_Initure.Speed=GPIO_SPEED_HIGH;     
 	HAL_GPIO_Init(LED_PORT,&GPIO_Initure);
-	
-	SetLedStates(NoneCare);
-	
+		
 	LedOff(  );
+}
+
+/*
+*按键开机指示灯
+*/
+void PowerOn(void)
+{
+	for(uint8_t i = 0; i < 10; ++i)
+	{
+		HAL_GPIO_TogglePin(LED_PORT,LED_GREEN);	
+		HAL_Delay(400);
+	}
+	HAL_GPIO_WritePin(LED_PORT,LED_GREEN,GPIO_PIN_RESET);
+}
+
+/*
+*按键关机指示灯
+*/
+void PowerOff(void)
+{
+	for(uint8_t i = 0; i < 10; ++i)
+	{
+		HAL_GPIO_TogglePin(LED_PORT,LED_RED);
+		HAL_Delay(400);
+	}
+	HAL_GPIO_WritePin(LED_PORT,LED_RED,GPIO_PIN_RESET);
 }
 
 /*
@@ -70,7 +94,7 @@ void LedInit(void)
 */
 void LedOn(void)
 {
-	HAL_GPIO_WritePin(LED_PORT,LED_PIN,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED_PORT,LED_RED|LED_GREEN,GPIO_PIN_SET);
 }
 
 /*
@@ -78,7 +102,7 @@ void LedOn(void)
 */
 void LedOff(void)
 {
-	HAL_GPIO_WritePin(LED_PORT,LED_PIN,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_PORT,LED_RED|LED_GREEN,GPIO_PIN_RESET);
 }
 
 /*
@@ -86,7 +110,7 @@ void LedOff(void)
 */
 void LedToggle(void)
 {
-	HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
+	HAL_GPIO_TogglePin(LED_PORT,LED_RED|LED_GREEN);
 }
 
 /*
@@ -144,38 +168,5 @@ void LedRev(int8_t Counter)
 	{
 		HAL_TIM_Base_Start_IT(&htim2);
 		DEBUG_APP(3,"----Start_IT----");
-	}
-}
-
-/*
-*LED处理
-*/
-void LedDisplay(void)
-{
-	
-	switch(GetLedStates(  ))
-	{
-		case GpsLocation:
-			
-					DEBUG_APP(3,"LedStates = %d",GpsLocation);
-					LedToggle(  );	
-			
-		break;
-		
-		case SendSucess:
-			
-		break;
-		
-		case SendFail:   ////长亮1S，短灭200ms
-			
-		break;
-		
-		case Receive:
-			
-		break;
-		
-		default:
-			
-		break;
 	}
 }

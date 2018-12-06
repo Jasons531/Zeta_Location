@@ -156,7 +156,7 @@ void RtcvRtcCalibrate(void)
 	DEBUG_APP(3,"ulActualDelay:%u\r\n",TickDelay);
 	
 	//if(ulActualDelay>=999 && ulActualDelay<=1001)
-	if(TickDelay == 1000 )
+	if( TickDelay == 1000 )
 	{
 			DEBUG_APP(3,"无须校准\r\n");
 			return ;
@@ -174,7 +174,7 @@ void RtcvRtcCalibrate(void)
 	RtcHandle.Init.AsynchPrediv = 36;
   RtcHandle.Init.SynchPrediv = CalibrateSynchPrediv;
 	
-	RtcHandle.State = HAL_RTC_STATE_RESET;
+//	RtcHandle.State = HAL_RTC_STATE_RESET;
 	
 	if (HAL_RTC_Init(&RtcHandle) != HAL_OK)
 	{
@@ -197,18 +197,22 @@ uint32_t GetCurrentSleepRtc(void)
 	uint32_t CurrentRtc = 0;
 	
 	uint32_t AlarmTime = 0;
-			
+		
+	HAL_NVIC_DisableIRQ(RTC_IRQn);
+				
 	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);
 	
 	HAL_RTC_GetAlarm(&RtcHandle, &RTC_AlarmStruct, RTC_ALARM_A, RTC_FORMAT_BIN);
 		
-	CurrentRtc = RTC_TimeStruct.Hours * 36000 + RTC_TimeStruct.Minutes * 60 + RTC_TimeStruct.Seconds;
+	CurrentRtc = RTC_TimeStruct.Hours * 3600 + RTC_TimeStruct.Minutes * 60 + RTC_TimeStruct.Seconds;
 	
-	AlarmTime = RTC_AlarmStruct.AlarmTime.Hours * 36000 + RTC_AlarmStruct.AlarmTime.Minutes * 60 + RTC_AlarmStruct.AlarmTime.Seconds;
+	AlarmTime  = RTC_AlarmStruct.AlarmTime.Hours * 3600 + RTC_AlarmStruct.AlarmTime.Minutes * 60 + RTC_AlarmStruct.AlarmTime.Seconds;
 	
-	DEBUG_APP(2,"currenttime: %d  hour : %d min : %d second : %d",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
+	DEBUG_APP(2,"Getcurrenttime: %d  hour : %d min : %d second : %d",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
 	
-	DEBUG_APP(2,"AlarmTime:   %d  hour : %d min : %d second : %d",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
+	DEBUG_APP(2,"GetAlarmTime:   %d  hour : %d min : %d second : %d",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
+
+	HAL_NVIC_EnableIRQ(RTC_IRQn);
 
 	return 	(AlarmTime > CurrentRtc)?(AlarmTime - CurrentRtc):10;
 }
@@ -245,24 +249,25 @@ void SetRtcAlarm(uint16_t time)
 	HAL_RTCEx_DeactivateWakeUpTimer( &RtcHandle );
 	
 	HAL_NVIC_DisableIRQ(RTC_IRQn);
-
+	
 	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);
 	HAL_RTC_GetDate(&RtcHandle, &RTC_DateStruct, RTC_FORMAT_BIN);
 	DEBUG_APP(2,"currenttime hour : %d min : %d second : %d",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
 
-	RTC_AlarmStructure.AlarmTime.Seconds = (RTC_TimeStruct.Seconds+time)%60;  
-	RTC_AlarmStructure.AlarmTime.Minutes = (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)%60;
-	RTC_AlarmStructure.AlarmTime.Hours = (RTC_TimeStruct.Hours + (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)/60)%24;
+	RTC_AlarmStructure.AlarmTime.Seconds		= (RTC_TimeStruct.Seconds+time)%60;  
+	RTC_AlarmStructure.AlarmTime.Minutes 		= (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)%60;
+	RTC_AlarmStructure.AlarmTime.Hours 	 		= (RTC_TimeStruct.Hours + (RTC_TimeStruct.Minutes + (RTC_TimeStruct.Seconds+time)/60)/60)%24;
+		
 	RTC_AlarmStructure.AlarmTime.SubSeconds = 0;
 	
 	DEBUG_APP(2,"wkuptime    hour : %d min : %d second : %d",RTC_AlarmStructure.AlarmTime.Hours,RTC_AlarmStructure.AlarmTime.Minutes,RTC_AlarmStructure.AlarmTime.Seconds);
 
-	RTC_AlarmStructure.AlarmDateWeekDay = RTC_WEEKDAY_MONDAY;
-	RTC_AlarmStructure.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
-	RTC_AlarmStructure.AlarmMask = RTC_ALARMMASK_DATEWEEKDAY;//RTC_ALARMMASK_NONE;为精准匹配
-	RTC_AlarmStructure.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_NONE;
+	RTC_AlarmStructure.AlarmDateWeekDay 		= RTC_WEEKDAY_MONDAY;
+	RTC_AlarmStructure.AlarmDateWeekDaySel 	= RTC_ALARMDATEWEEKDAYSEL_DATE;
+	RTC_AlarmStructure.AlarmMask 						= RTC_ALARMMASK_DATEWEEKDAY;//RTC_ALARMMASK_NONE;为精准匹配
+	RTC_AlarmStructure.AlarmSubSecondMask 	= RTC_ALARMSUBSECONDMASK_NONE;
 	RTC_AlarmStructure.AlarmTime.TimeFormat = RTC_HOURFORMAT12_AM;
-	RTC_AlarmStructure.Alarm = RTC_ALARM_A;
+	RTC_AlarmStructure.Alarm 								= RTC_ALARM_A;
     	
 	if( HAL_RTC_SetAlarm_IT( &RtcHandle, &RTC_AlarmStructure, RTC_FORMAT_BIN ) != HAL_OK )
 	{

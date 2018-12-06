@@ -72,63 +72,6 @@ int main(void)
 		while (1)
    {			 
 			UserLocatReport(  ); 
-		 	 	
-#if 0 
-//			char str[100] ="$GPGLL,2232.9085,N,11356.5973,E,111334.000,A,A*51";
-			char str[100] = "$GPGLL,2232.7891,N,11356.6350,E,070245.000,A,A*5B";
-			char GPLL[10];
-			char N_Data[15] ;
-			char N;
-			char E_Data[15] ;
-
-			double data_N = 0;
-			double data_E = 0;
-		 
-			uint8_t len = 4;
-		 
-		 	ZetaSendBuf.Buf[0] = 0xff;
-			ZetaSendBuf.Buf[1] = 0x00;
-			
-			ZetaSendBuf.Buf[3] = 0x02;
-
-			sscanf(str, "%[^,]%*[,] %[^,]%*[,] %[^,]%*[,] %[^,]%*[,]", GPLL,N_Data, &N, E_Data);     ////取数到,截止，同时过滤,
-
-			printf("The lowercase is: %s %s %c %s\r\n", GPLL,N_Data,N,E_Data);
-
-			sscanf(N_Data, "%lf", &data_N);
-			sscanf(E_Data, "%lf", &data_E);
-
-			SetGpsMode.EastSpend = data_E * 10000;
-			SetGpsMode.NorthSpend = data_N * 10000;
-
-			printf("E_Data = %.4f N_Data = %.4f E = %d, N = %d\r\n",data_N,data_E, SetGpsMode.EastSpend,SetGpsMode.NorthSpend);
-
-			SetGpsMode.South = false;
-			SetGpsMode.West = false;
-
-			printf("state = 0x%02x\r\n",0x30 | (SetGpsMode.West << 1) | (SetGpsMode.South << 0));
-
-			ZetaSendBuf.Buf[len++] = 0x00 | (SetGpsMode.West << 1) | (SetGpsMode.South << 0);
-
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.EastSpend >> 20)&0xFF; ///28bit取高8bit，注意非32bit取运算
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.EastSpend >> 12)&0xFF;
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.EastSpend >> 4)&0xFF;
-
-			ZetaSendBuf.Buf[len++] = (((SetGpsMode.EastSpend >> 0) & 0xF) << 4) | ((SetGpsMode.NorthSpend >> 24) & 0xF); ///28bit取高4bit
-
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.NorthSpend >> 16) & 0xFF;
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.NorthSpend >> 8) & 0xFF;
-			ZetaSendBuf.Buf[len++] = (SetGpsMode.NorthSpend >> 0) & 0xFF;
-			
-			ZetaSendBuf.Buf[2] = len; /// +sensor_len
-			ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
-
-			UserSend(&ZetaSendBuf);
-			
-			HAL_Delay(30000);
-
-#endif
-
 	 } 
 }
 

@@ -64,6 +64,7 @@ void UserKeyWakeupHandle(void)
 		///外设初始化
 		BoardInitMcu(  );
 		DEBUG(2,"开机 \r\n");
+		PowerOn(  );
 	}
 	else
 	{
@@ -233,9 +234,9 @@ void UserLocatMotion(void)
 			}
 			
 			///没触发，则切换进加速度传感器停止模式						
-			User.SleepTime = FlashRead32(ALARM_CYCLE_ADDR);
+			LocationInfor.AlarmCycle = FlashRead32(ALARM_CYCLE_ADDR);
 			
-			if(0 == User.SleepTime)
+			if(0 == LocationInfor.AlarmCycle)
 			{					
 				///侦听到加速度还触发：但周期发送条件不满足，进入WaitMode
 				LocatHandles->SetMode( WaitMode );	
@@ -244,10 +245,16 @@ void UserLocatMotion(void)
 				return;
 			}
 		 
-			DEBUG_APP(2,);
-			SetRtcAlarm(60);
+			User.SleepTime = LocationInfor.AlarmCycle * MINUTE;
+			
+			DEBUG_APP(2,"LocationInfor.AlarmCycle = %d",LocationInfor.AlarmCycle);
+			SetRtcAlarm(User.SleepTime);
 			UserIntoLowPower(  );
 		}
+	}
+	else
+	{
+		LocatHandles->SetMode( WaitMode );
 	}
 }
 
@@ -295,10 +302,6 @@ void UserLocatMotionStop(void)
 			UserIntoLowPower(  );
 		}			
 	}		
-//	else if(MotionMode == LocatHandles->GetMode(  )) 
-//	{
-//		return;
-//	}
 }
 
 /*UserLocatReport	：用户定位器信息上报
@@ -335,11 +338,14 @@ void UserLocatReport(void)
 				DEBUG_APP(2,"---- HeartMode ----");
 		
 				UserSendLocation(HEART_REPORT_SUCESS);
-				User.SleepTime = FlashRead16(HEART_CYCLE_ADDR);
+				LocationInfor.HeartCycle = FlashRead16(HEART_CYCLE_ADDR);
 		
 				LocatHandles->SetMode( WaitMode );
-				DEBUG_APP(2,);
-				SetRtcAlarm(600);
+				DEBUG_APP(2,"LocationInfor.HeartCycle = %d",LocationInfor.HeartCycle);
+		
+				User.SleepTime = LocationInfor.HeartCycle * MINUTE;
+		
+				SetRtcAlarm(User.SleepTime);
 				UserIntoLowPower(  );
 			break;
 		
@@ -353,6 +359,20 @@ void UserLocatReport(void)
 			
 				UserLocatMotionStop(  );
 		
+			break;
+		
+		case	QueryLocaMode:
+			
+				LocatHandles->SetState(PATIONNULL);	
+				
+				UserCheckGps(  );
+		
+				while(PATIONNULL == LocatHandles->BreakState(  ));
+		
+				UserSendLocation(QUERY_FEED_LOCA_SUCESS);
+		
+				LocatHandles->SetMode( WaitMode );
+					
 			break;
 		
 		default :
@@ -369,7 +389,7 @@ void UserSend(Zeta_t *SendBuf)
 {
 	uint8_t ApplyCounter = 0;
 	
-	for(uint8_t i = 0; i < 3; i++)
+	for(uint8_t i = 0; i < 10; i++)
 	{	
 		DEBUG_APP(2,"start send data\r\n");
 		
@@ -482,9 +502,12 @@ void UserDownCommand(void)
 
 	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
 	
-	DEBUG_APP(2,"len = %d\r\n",ZetaSendBuf.Len);
+	DEBUG_APP(2,"len = %d GetMode = %d\r\n",ZetaSendBuf.Len,LocatHandles->GetMode(  ));
 	
-	UserSend(&ZetaSendBuf);
+	if(QueryLocaMode != LocatHandles->GetMode(  ))
+	{
+		UserSend(&ZetaSendBuf);
+	}
 
 	memset(ZetaSendBuf.RevBuf, 0, ZetaSendBuf.Len - 0x04);
 }
