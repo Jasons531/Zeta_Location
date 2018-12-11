@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "gps.h"
 
-LocationIn_t LocationInfor = {false, VERSIOS, 12*HOUR, 5, 2*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE
+LocationIn_t LocationInfor = {false, VERSIOS, 0.1*HOUR, 5, 0.5*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE 12*HOUR
 
 LocatH_t 	LocatHandle;
 
@@ -296,7 +296,6 @@ void LocationCheckGps(LocationIn_t Locat)
 {
 	if(SetGpsMode.Gpll)
 	{	
-		DEBUG_APP(2,"Locat.GpsTime = %d",Locat.GpsTime);
 		if( ((HAL_GetTick( ) - SetGpsMode.GpsOverTime) > Locat.GpsTime * MSEC) )  ///GPS 2分钟内定位失败，默认GPS异常不再定位 && (LocatHandles->BreakState(  ) == PATIONNULL)
 		{	 
 			DEBUG(2,"GPS_TIME22 : %d\r\n",HAL_GetTick( ) - SetGpsMode.GpsOverTime);

@@ -36,6 +36,10 @@ void RtcvRtcCalibrate(void);
 
 uint32_t GetCurrentSleepRtc(void);
 
+uint32_t GetCurrentHeartRtc(void);
+
+uint32_t ResetHeartSleepRtc(void);
+
 void SetRtcAlarm(uint16_t time);
 
 

@@ -50,35 +50,38 @@ typedef struct User_s
 {
 	uint8_t 				BatState;
 	uint32_t 				SleepTime;
+	uint32_t        SaveSleepTime;
 	bool 						SleepWakeUp;
 	bool 						TestMode;
 }User_t;
 
-extern UserZeta_t UserZetaCheck[];
+extern 	UserZeta_t UserZetaCheck[];
 
-extern uint8_t DeviceInfo[4];
+extern 	uint8_t DeviceInfo[4];
 
-extern User_t User;
+extern 	User_t User;
 
-void 	 UserKeyPinInit(void);
+extern 	bool  MotionBegain;
 
-void	 UserKeyWakeupHandle(void);
+void 	 	UserKeyPinInit(void);
 
-void	 UserPeriPheralInit(void);
+void	 	UserKeyWakeupHandle(void);
 
-void	 UserWakeupHandle(void);
+void	 	UserPeriPheralInit(void);
 
-void	 UserCheckGps(void);
+void	 	UserWakeupHandle(void);
 
-void	 UserLocationVerion(uint8_t VerCmd);
+void	 	UserCheckGps(void);
 
-void	 UserSendLocation(uint8_t LocationCmd);
+void	 	UserLocationVerion(uint8_t VerCmd);
 
-void	 UserLocatMotion(void);
+void	 	UserSendLocation(uint8_t LocationCmd);
 
-void	 UserLocatMotionStop(void);
+void	 	UserLocatMotion(void);
 
-void	 UserLocatReport(void);
+void	 	UserLocatMotionStop(void);
+
+void	 	UserLocatReport(void);
 
 void	 UserSend(Zeta_t *SendBuf);
 

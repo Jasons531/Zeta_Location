@@ -109,7 +109,7 @@ void WakeupZetaDisable(void)
 void ZetaInterrupt(void)
 {	
 	///读取数据
-	HAL_Delay(80); ///延时 = Zeta串口稳定接收数据 + 串口超时时间
+	HAL_Delay(100); ///延时 = Zeta串口稳定接收数据 + 串口超时时间
 	
 	ZetaHandle.Recv(  );
 	

@@ -70,6 +70,8 @@ uint8_t CheckPowerkey(void)
 		{
 			BoardInitClock(  );
 			
+			LedInit(  );
+			
 			User.SleepWakeUp = false;
 		}
 		/*************** 1S按键延时 ***************/
@@ -179,19 +181,22 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			{			
 				if(User.SleepWakeUp)
 				{		
-					User.SleepWakeUp = false;									
+					User.SleepWakeUp = false;		
+
+					BoardInitClock(  );
 					
+					BoardInitMcu(  );	
+										
 					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位
 					{
 						LocatHandles->SetMode( MotionStopMode );
 						DEBUG_APP(2,"---- MotionStopMode!!! ---- ");
-					}
-					
-					BoardInitClock(  );
-					
-					BoardInitMcu(  );				
+					}			
 
 					MMa8452qTime = HAL_GetTick(  );
+					
+					LocationInfor.MotionState = Invalid;
+					
 					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");
 				}		
 				
@@ -223,7 +228,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 							break;
 						}
 					}
-					DEBUG_APP(2,"MMa8452qTime %d", HAL_GetTick(  ) - MMa8452qTime);		
+					DEBUG_APP(2,"MMa8452qTime %d WorkMode = %d", HAL_GetTick(  ) - MMa8452qTime, LocatHandles->GetMode(  ));		
 				}					
 			}
 

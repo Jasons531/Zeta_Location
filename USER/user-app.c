@@ -22,7 +22,7 @@ UserZeta_t UserZetaCheck[] = {
 	{0x13, 1000, Payload}, ///查询网络质量
 };
 
-User_t User = {0, 0, false, false};
+User_t User = {0, 0, 0, false, false};
 
 static uint8_t DeviceInfo[4] = {0};
 
@@ -148,6 +148,8 @@ void UserSendLocation(uint8_t LocationCmd)
 	ZetaSendBuf.Len = ZetaSendBuf.Buf[2];
 	
 	UserSend(&ZetaSendBuf);
+	
+	HAL_Delay(4000);
 			
 	/********************缓存清除*******************/
 	memset(ZetaSendBuf.Buf, 0, ZetaSendBuf.Len);
@@ -169,20 +171,22 @@ bool 	 MotionBegain = false;
 void UserLocatMotion(void)
 {
 	if(LocationInfor.AlarmEnable)
-	{
-		///需要超时机制退出到心跳模式		
-		DEBUG_APP(2,);
-		while(!LocationInfor.BegainLocat && (HAL_GetTick(  ) - MMa8452qTime < (LocationInfor.MoveTimes) * 1000));
+	{		
+		while(!LocationInfor.BegainLocat && (HAL_GetTick(  ) - MMa8452qTime < (LocationInfor.MoveTimes + 1) * 1000));
 
 		///多次触发则周期内定时上报：周期上报数据
 		if(MultActive == LocationInfor.MotionState)
 		{
 			CurrentSleepTime = GetCurrentSleepRtc(  );
+			
+			LocationInfor.MotionState = Invalid;
 								
 			DEBUG_APP(2,"AlarmTime = %d ", CurrentSleepTime);
 			
 			if(10 != CurrentSleepTime)
 			{
+				if(MultActive == LocationInfor.MotionState)
+					return;
 				SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间
 				UserIntoLowPower(  );
 			}
@@ -247,14 +251,12 @@ void UserLocatMotion(void)
 		 
 			User.SleepTime = LocationInfor.AlarmCycle * MINUTE;
 			
+			User.SaveSleepTime = GetCurrentHeartRtc(  );
+			
 			DEBUG_APP(2,"LocationInfor.AlarmCycle = %d",LocationInfor.AlarmCycle);
 			SetRtcAlarm(User.SleepTime);
 			UserIntoLowPower(  );
 		}
-	}
-	else
-	{
-		LocatHandles->SetMode( WaitMode );
 	}
 }
 
@@ -264,8 +266,9 @@ void UserLocatMotion(void)
 */
 void UserLocatMotionStop(void)
 {
-	///需要超时机制退出到心跳模式		
-	DEBUG_APP(2,);
+	///需要超时机制退出到心跳模式			
+	MotionStopTime = HAL_GetTick(  );
+	
 	while(!LocationInfor.BegainLocat && (HAL_GetTick(  ) - MotionStopTime < (LocationInfor.StopTimes) * 1000));
 
 	DEBUG_APP(2,"--- Mode --- %d MotionState = %d",LocatHandles->GetMode(  ),LocationInfor.MotionState);
@@ -316,7 +319,7 @@ void UserLocatReport(void)
 			
 			DEBUG_APP(2,"---- waiting %d----", LocationInfor.MotionState);
 	
-			CurrentSleepTime = GetCurrentSleepRtc(  );
+			CurrentSleepTime = ResetHeartSleepRtc(  );
 				
 			if(10 != CurrentSleepTime && LocationInfor.MotionState == InActive) ///在心跳休眠周期内，则再次休眠
 			{
@@ -325,53 +328,61 @@ void UserLocatReport(void)
 				LocationInfor.MotionState = Invalid;
 				SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间
 				UserIntoLowPower(  );
-			}		
+			}	
 			
-			LocatHandles->SetMode( HeartMode );
+			if(MotionStopMode == LocatHandles->GetMode(  ))
+			{
+				DEBUG_APP(2,"---- Break WaitMode ----");
+				break;
+			}
+			else
+				LocatHandles->SetMode( HeartMode );
 			
 			break;
 		
 		case	HeartMode:
 			
-				while(PATIONNULL == LocatHandles->BreakState(  ));
-		
-				DEBUG_APP(2,"---- HeartMode ----");
-		
-				UserSendLocation(HEART_REPORT_SUCESS);
-				LocationInfor.HeartCycle = FlashRead16(HEART_CYCLE_ADDR);
-		
-				LocatHandles->SetMode( WaitMode );
-				DEBUG_APP(2,"LocationInfor.HeartCycle = %d",LocationInfor.HeartCycle);
-		
-				User.SleepTime = LocationInfor.HeartCycle * MINUTE;
-		
-				SetRtcAlarm(User.SleepTime);
-				UserIntoLowPower(  );
+			while(PATIONNULL == LocatHandles->BreakState(  ));
+							
+			DEBUG_APP(2,"---- HeartMode ----");
+	
+			UserSendLocation(HEART_REPORT_SUCESS);
+			LocationInfor.HeartCycle = FlashRead16(HEART_CYCLE_ADDR);
+	
+			LocatHandles->SetMode( WaitMode );
+			DEBUG_APP(2,"LocationInfor.HeartCycle = %d",LocationInfor.HeartCycle);
+	
+			User.SleepTime = LocationInfor.HeartCycle * MINUTE;
+	
+			LocatHandles->SetMode( WaitMode );
+	
+			SetRtcAlarm(User.SleepTime);
+			UserIntoLowPower(  );
 			break;
 		
 		case	MotionMode:
 			
-				UserLocatMotion(  );
+			UserLocatMotion(  );
 				
 			break;
 		
 		case	MotionStopMode:
 			
-				UserLocatMotionStop(  );
-		
+			UserLocatMotionStop(  );
+	
 			break;
 		
 		case	QueryLocaMode:
 			
-				LocatHandles->SetState(PATIONNULL);	
-				
-				UserCheckGps(  );
-		
-				while(PATIONNULL == LocatHandles->BreakState(  ));
-		
-				UserSendLocation(QUERY_FEED_LOCA_SUCESS);
-		
-				LocatHandles->SetMode( WaitMode );
+			LocatHandles->SetState(PATIONNULL);	
+			
+			UserCheckGps(  );
+	
+			while(PATIONNULL == LocatHandles->BreakState(  ));
+	
+			UserSendLocation(QUERY_FEED_LOCA_SUCESS);
+	
+			LocatHandles->SetMode( WaitMode );
 					
 			break;
 		
@@ -507,6 +518,8 @@ void UserDownCommand(void)
 	if(QueryLocaMode != LocatHandles->GetMode(  ))
 	{
 		UserSend(&ZetaSendBuf);
+		
+		HAL_Delay(4000);
 	}
 
 	memset(ZetaSendBuf.RevBuf, 0, ZetaSendBuf.Len - 0x04);

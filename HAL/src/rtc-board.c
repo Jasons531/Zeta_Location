@@ -197,6 +197,24 @@ uint32_t GetCurrentSleepRtc(void)
 	uint32_t CurrentRtc = 0;
 	
 	uint32_t AlarmTime = 0;
+	
+	//关闭RTC相关中断，可能在RTC实验打开了
+	__HAL_RTC_WAKEUPTIMER_DISABLE_IT(&RtcHandle,RTC_IT_WUT);
+	__HAL_RTC_TIMESTAMP_DISABLE_IT(&RtcHandle,RTC_IT_TS);
+	__HAL_RTC_ALARM_DISABLE_IT(&RtcHandle,RTC_IT_ALRA|RTC_IT_ALRB);
+	
+	//清除RTC相关中断标志位
+	__HAL_RTC_ALARM_CLEAR_FLAG(&RtcHandle,RTC_FLAG_ALRAF|RTC_FLAG_ALRBF);
+	__HAL_RTC_TIMESTAMP_CLEAR_FLAG(&RtcHandle,RTC_FLAG_TSF); 
+	__HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&RtcHandle,RTC_FLAG_WUTF);
+	
+	/* 清除所有唤醒标志位 */
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+	
+	HAL_RTC_WaitForSynchro(&RtcHandle);
+	
+	HAL_RTC_DeactivateAlarm( &RtcHandle, RTC_ALARM_A );
+	HAL_RTCEx_DeactivateWakeUpTimer( &RtcHandle );
 		
 	HAL_NVIC_DisableIRQ(RTC_IRQn);
 				
@@ -215,6 +233,62 @@ uint32_t GetCurrentSleepRtc(void)
 	HAL_NVIC_EnableIRQ(RTC_IRQn);
 
 	return 	(AlarmTime > CurrentRtc)?(AlarmTime - CurrentRtc):10;
+}
+
+/*GetCurrentHeartRtc：记录当前心跳周期，振动停止还原心跳休眠周期
+*参数								：无
+*返回值							：无
+*/
+uint32_t GetCurrentHeartRtc(void)
+{
+	RTC_AlarmTypeDef RTC_AlarmStruct;
+		
+	uint32_t AlarmTime = 0;
+	
+	HAL_RTC_WaitForSynchro(&RtcHandle);
+	
+	HAL_RTC_DeactivateAlarm( &RtcHandle, RTC_ALARM_A );
+	HAL_RTCEx_DeactivateWakeUpTimer( &RtcHandle );
+		
+	HAL_NVIC_DisableIRQ(RTC_IRQn);
+				
+	HAL_RTC_GetAlarm(&RtcHandle, &RTC_AlarmStruct, RTC_ALARM_A, RTC_FORMAT_BIN);
+			
+	AlarmTime  = RTC_AlarmStruct.AlarmTime.Hours * 3600 + RTC_AlarmStruct.AlarmTime.Minutes * 60 + RTC_AlarmStruct.AlarmTime.Seconds;
+		
+	DEBUG_APP(2,"GetCurrentHeartRtc:   %d  hour : %d min : %d second : %d",AlarmTime, RTC_AlarmStruct.AlarmTime.Hours,RTC_AlarmStruct.AlarmTime.Minutes,RTC_AlarmStruct.AlarmTime.Seconds);
+
+	HAL_NVIC_EnableIRQ(RTC_IRQn);
+
+	return 	AlarmTime;
+}
+
+/*ResetHeartSleepRtc：还原心跳休眠周期
+*参数								：无
+*返回值							：无
+*/
+uint32_t ResetHeartSleepRtc(void)
+{
+	RTC_TimeTypeDef  RTC_TimeStruct;
+	
+	uint32_t CurrentRtc = 0;
+		
+	HAL_RTC_WaitForSynchro(&RtcHandle);
+	
+	HAL_RTC_DeactivateAlarm( &RtcHandle, RTC_ALARM_A );
+	HAL_RTCEx_DeactivateWakeUpTimer( &RtcHandle );
+		
+	HAL_NVIC_DisableIRQ(RTC_IRQn);
+				
+	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);
+			
+	CurrentRtc = RTC_TimeStruct.Hours * 3600 + RTC_TimeStruct.Minutes * 60 + RTC_TimeStruct.Seconds;
+	
+	DEBUG_APP(2,"Getcurrenttime: %d  hour : %d min : %d second : %d",CurrentRtc, RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds);
+			
+	HAL_NVIC_EnableIRQ(RTC_IRQn);
+
+	return 	(User.SaveSleepTime > CurrentRtc)?(User.SaveSleepTime - CurrentRtc):10;
 }
 
 /*SetRtcAlarm：设置RTC闹钟休眠唤醒

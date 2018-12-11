@@ -69,6 +69,8 @@ int main(void)
 	 
 	 UserLocationVerion( QUERY_SEND_VER );
 	 
+	 DEBUG_APP(2,"Battery = %d", CheckBattery(  ));
+	 
 		while (1)
    {			 
 			UserLocatReport(  ); 

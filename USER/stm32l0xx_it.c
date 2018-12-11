@@ -151,15 +151,14 @@ void TIM2_IRQHandler(void)
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
-	  /* USER CODE END TIM2_IRQn 1 */
+	/* USER CODE END TIM2_IRQn 1 */
 }
 
-//uint32_t SleepTimes = 0;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	Timer2_Counter++;
 	
-	if(Timer2_Counter>5)//200ms/´Î
+	if(Timer2_Counter>50)//20ms/´Î
 	{
 		DEBUG(3,"%s\r\n",__func__);
 		
@@ -170,7 +169,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		
 		Timer2_Counter = 0;
 	}
-							
+	
 	if(MotionMode == LocatHandles->GetMode(  )) 
 	{
 		if(HAL_GetTick(  )- MotionStopTime > LocationInfor.StopTimes * 1000)
@@ -181,8 +180,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			DEBUG_APP(2,);
 		}
 	}	
+	
+	else if(MotionStopMode == LocatHandles->GetMode(  ) && MultActive == LocationInfor.MotionState) 
+	{
+		if(HAL_GetTick(  )- MotionStopTime > LocationInfor.StopTimes * 1000)
+		{
+			DEBUG_APP(2,"MotionBegain = %d",MotionBegain);
+		
+			LocationInfor.MotionState = Invalid;
+		}		
+	}
 }
-
 
 /**
 * @brief This function handles RTC global interrupt through EXTI lines 17, 19 and 20 and LSE CSS interrupt through EXTI line 19.
