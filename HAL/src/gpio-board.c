@@ -103,6 +103,8 @@ uint8_t CheckPowerkey(void)
 uint32_t MMa8452qTime = 0;
 uint32_t MotionStopTime = 0;
 
+bool 		 MotionStart = false;
+
 /**
   * @brief  EXTI callback
   * @param  EXTI : EXTI handle
@@ -154,6 +156,8 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					BoardInitClock(  );
 					
 					BoardInitMcu(  );	
+					
+					User.SaveSleepTime = GetCurrentHeartRtc(  );
 				}		
 				DEBUG_APP(2,"PIN = %d",HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN));
 
@@ -165,7 +169,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				{
 					User.SleepWakeUp = false;				
 
-					uint32_t SleepTime = GetCurrentSleepRtc(  );
+					uint32_t SleepTime = ResetHeartSleepRtc(  );
 																								
 					DEBUG_APP(2,"AlarmTime = %d ", SleepTime);
 					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
@@ -187,15 +191,18 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					
 					BoardInitMcu(  );	
 										
-					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位
-					{
-						LocatHandles->SetMode( MotionStopMode );
-						DEBUG_APP(2,"---- MotionStopMode!!! ---- ");
-					}			
-
 					MMa8452qTime = HAL_GetTick(  );
 					
-					LocationInfor.MotionState = Invalid;
+					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+					{
+						LocatHandles->SetMode( WaitMode );
+						
+						User.SaveSleepTime = GetCurrentHeartRtc(  );
+						
+						MotionStart = true;
+					}
+									
+					LocationInfor.MotionState = InvalidActive;
 					
 					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");
 				}		
@@ -212,12 +219,12 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 											
 					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
 					{
-						if(MotionStopMode == LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
-						{
+						if(MotionStart) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+						{				
+							MotionStart = false;
 							LocatHandles->SetMode( MotionMode );
-							LocationInfor.BegainLocat = true;
-							
-							LocationInfor.MotionState = Active;
+							LocationInfor.MotionState = SingleActive;
+						
 							DEBUG_APP(2,"---- BegainLocat -----");
 							break;
 						}

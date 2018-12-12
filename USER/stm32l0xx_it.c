@@ -176,18 +176,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		{
 			LocatHandles->SetMode( MotionStopMode );
 
-			LocationInfor.MotionState = InActive;
+			LocationInfor.MotionState = StopActive;
 			DEBUG_APP(2,);
 		}
 	}	
-	
-	else if(MotionStopMode == LocatHandles->GetMode(  ) && MultActive == LocationInfor.MotionState) 
+	else if(WaitMode == LocatHandles->GetMode(  )) 
 	{
 		if(HAL_GetTick(  )- MotionStopTime > LocationInfor.StopTimes * 1000)
-		{
-			DEBUG_APP(2,"MotionBegain = %d",MotionBegain);
-		
-			LocationInfor.MotionState = Invalid;
+		{		
+			DEBUG_APP(2,);
+			LocationInfor.MotionState = FailActive;
 		}		
 	}
 }

@@ -63,9 +63,9 @@ int main(void)
 
 	 UserSetHeart(0x00);
 	 
-	 LocationInfor.MotionState = Invalid;
+	 LocationInfor.MotionState = InvalidActive;
 	 
-	 LocatHandles->SetMode( WaitMode );
+	 LocatHandles->SetMode( HeartMode );
 	 
 	 UserLocationVerion( QUERY_SEND_VER );
 	 

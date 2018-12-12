@@ -123,10 +123,20 @@ typedef enum Locatmode_s
 
 typedef enum Motion_s
 {
-	Invalid					= 0,
-	Active 					= 1,
+	/*********无效运动模式********/
+	InvalidActive		= 0,
+	
+	/*********单次运动模式********/
+	SingleActive 		= 1,
+	
+	/*********多次运动模式********/
 	MultActive 			= 2,
-	InActive				= 3,	
+	
+	/*********停止运动模式********/
+	StopActive			= 3,
+	
+	/*********运动失败模式********/
+	FailActive			= 4,
 }Motion_t;
 
 typedef struct LocationI_s

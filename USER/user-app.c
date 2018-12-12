@@ -172,25 +172,34 @@ void UserLocatMotion(void)
 {
 	if(LocationInfor.AlarmEnable)
 	{		
-		while(!LocationInfor.BegainLocat && (HAL_GetTick(  ) - MMa8452qTime < (LocationInfor.MoveTimes + 1) * 1000));
-
 		///多次触发则周期内定时上报：周期上报数据
 		if(MultActive == LocationInfor.MotionState)
 		{
 			CurrentSleepTime = GetCurrentSleepRtc(  );
 			
-			LocationInfor.MotionState = Invalid;
+			LocationInfor.MotionState = InvalidActive;
 								
 			DEBUG_APP(2,"AlarmTime = %d ", CurrentSleepTime);
 			
 			if(10 != CurrentSleepTime)
 			{
-				if(MultActive == LocationInfor.MotionState)
-					return;
-				SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间
-				UserIntoLowPower(  );
+				if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
+				{
+					DEBUG_APP(2,);
+					
+					HAL_Delay(1000); ///延时判断是否停止
+					
+					SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间	
+					
+					if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
+					{
+						UserIntoLowPower(  );
+					}
+					else
+						return;
+				}
 			}
-			else ///到达休眠时间，取消休眠
+			else ///到达休眠时间，取消休眠，同时进入SingleActive模式周期上报
 			{
 				//关闭RTC相关中断，可能在RTC实验打开了
 				__HAL_RTC_WAKEUPTIMER_DISABLE_IT(&RtcHandle,RTC_IT_WUT);
@@ -205,31 +214,27 @@ void UserLocatMotion(void)
 				/* 清除所有唤醒标志位 */
 				__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 				
-				LocatHandles->SetMode( MotionStopMode );	
+				LocationInfor.MotionState = SingleActive;
 				return;
 			}
 		}	
 		////单次触发
-		else if(Active == LocationInfor.MotionState)
+		else if(SingleActive == LocationInfor.MotionState)
 		{
 			MotionBegain = true;
+		
+			DEBUG_APP(2,);
 			
-			if(LocationInfor.BegainLocat)
-			{				
-				DEBUG_APP(2,);
-				LocationInfor.BegainLocat = false;
-				
-				LocatHandles->SetState(PATIONNULL);	
-				
-				UserCheckGps(  );			
-			}
+			LocatHandles->SetState(PATIONNULL);	
+			
+			UserCheckGps(  );			
 									
 			while(PATIONNULL == LocatHandles->BreakState(  ));
 			
 			UserSendLocation(ALARM_REP_LOCA_SUCESS);
 			
 			///侦听加速度停止
-			if(LocationInfor.MotionState == InActive)
+			if(LocationInfor.MotionState == StopActive)
 			{
 				DEBUG_APP(2,"---- Go to MotionStopMode ----");
 				LocatHandles->SetMode( MotionStopMode );
@@ -245,7 +250,7 @@ void UserLocatMotion(void)
 				///侦听到加速度还触发：但周期发送条件不满足，进入WaitMode
 				LocatHandles->SetMode( WaitMode );	
 				
-				LocationInfor.MotionState = InActive;
+				LocationInfor.MotionState = StopActive;
 				return;
 			}
 		 
@@ -254,7 +259,7 @@ void UserLocatMotion(void)
 			User.SaveSleepTime = GetCurrentHeartRtc(  );
 			
 			DEBUG_APP(2,"LocationInfor.AlarmCycle = %d",LocationInfor.AlarmCycle);
-			SetRtcAlarm(User.SleepTime);
+			SetRtcAlarm(30); //User.SleepTime
 			UserIntoLowPower(  );
 		}
 	}
@@ -265,46 +270,26 @@ void UserLocatMotion(void)
 *返回值								：无
 */
 void UserLocatMotionStop(void)
-{
-	///需要超时机制退出到心跳模式			
-	MotionStopTime = HAL_GetTick(  );
-	
-	while(!LocationInfor.BegainLocat && (HAL_GetTick(  ) - MotionStopTime < (LocationInfor.StopTimes) * 1000));
-
+{	
 	DEBUG_APP(2,"--- Mode --- %d MotionState = %d",LocatHandles->GetMode(  ),LocationInfor.MotionState);
 
-	if(MotionMode != LocatHandles->GetMode(  )) 
-	{					
-		if(LocationInfor.MotionState == InActive)///加速度触发未满足条件
-		{	
-			if(MotionBegain)
-			{
-				MotionBegain = false;
-				DEBUG_APP(2,"---- MotionStopMode ----");
-	
-				LocatHandles->SetState(PATIONNULL);	
-	
-				UserCheckGps(  );
-	
-				while(PATIONNULL == LocatHandles->BreakState(  ));
-	
-				UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
-				LocatHandles->SetMode( WaitMode );
-			}									
-		}		
-		
-		else if(LocationInfor.MotionState == Invalid)
+	if(LocationInfor.MotionState == StopActive)///加速度停止
+	{	
+		if(MotionBegain)
 		{
-			CurrentSleepTime = GetCurrentSleepRtc(  );
-								
-			LocatHandles->SetMode( WaitMode );
-			
-			DEBUG_APP(2,"AlarmTime = %d ", CurrentSleepTime);
+			MotionBegain = false;
+			DEBUG_APP(2,"---- MotionStopMode ----");
 
-			SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间
-			UserIntoLowPower(  );
-		}			
-	}		
+			LocatHandles->SetState(PATIONNULL);	
+
+			UserCheckGps(  );
+
+			while(PATIONNULL == LocatHandles->BreakState(  ));
+
+			UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
+			LocatHandles->SetMode( WaitMode );
+		}									
+	}			
 }
 
 /*UserLocatReport	：用户定位器信息上报
@@ -316,27 +301,19 @@ void UserLocatReport(void)
 	switch(LocatHandles->GetMode(  ))
 	{
 		case WaitMode:
+				
+			if(LocationInfor.MotionState == StopActive || LocationInfor.MotionState == FailActive) ///在心跳休眠周期内，则再次休眠
+			{		
+				LocationInfor.MotionState = InvalidActive;
+				CurrentSleepTime = ResetHeartSleepRtc(  );
+				
+				LocatHandles->SetMode( HeartMode );	
 			
-			DEBUG_APP(2,"---- waiting %d----", LocationInfor.MotionState);
-	
-			CurrentSleepTime = ResetHeartSleepRtc(  );
+				DEBUG_APP(2,"---- Sleep Again ----");					
 				
-			if(10 != CurrentSleepTime && LocationInfor.MotionState == InActive) ///在心跳休眠周期内，则再次休眠
-			{
-				DEBUG_APP(2,"---- Sleep Again ----");
-				
-				LocationInfor.MotionState = Invalid;
 				SetRtcAlarm(CurrentSleepTime); ///闹钟时间-当前时间
 				UserIntoLowPower(  );
 			}	
-			
-			if(MotionStopMode == LocatHandles->GetMode(  ))
-			{
-				DEBUG_APP(2,"---- Break WaitMode ----");
-				break;
-			}
-			else
-				LocatHandles->SetMode( HeartMode );
 			
 			break;
 		
@@ -349,13 +326,10 @@ void UserLocatReport(void)
 			UserSendLocation(HEART_REPORT_SUCESS);
 			LocationInfor.HeartCycle = FlashRead16(HEART_CYCLE_ADDR);
 	
-			LocatHandles->SetMode( WaitMode );
 			DEBUG_APP(2,"LocationInfor.HeartCycle = %d",LocationInfor.HeartCycle);
 	
 			User.SleepTime = LocationInfor.HeartCycle * MINUTE;
-	
-			LocatHandles->SetMode( WaitMode );
-	
+		
 			SetRtcAlarm(User.SleepTime);
 			UserIntoLowPower(  );
 			break;
@@ -381,6 +355,8 @@ void UserLocatReport(void)
 			while(PATIONNULL == LocatHandles->BreakState(  ));
 	
 			UserSendLocation(QUERY_FEED_LOCA_SUCESS);
+		
+			LocationInfor.MotionState = StopActive;
 	
 			LocatHandles->SetMode( WaitMode );
 					

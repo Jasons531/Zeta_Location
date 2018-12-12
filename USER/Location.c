@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "gps.h"
 
-LocationIn_t LocationInfor = {false, VERSIOS, 0.1*HOUR, 5, 0.5*MINUTE, 5, 5, 1, HeartMode, InActive}; //30-2*MINUTE 12*HOUR
+LocationIn_t LocationInfor = {false, VERSIOS, 0.5*HOUR, 5, 0.5*MINUTE, 5, 5, 1, HeartMode, InvalidActive}; //30-2*MINUTE 12*HOUR
 
 LocatH_t 	LocatHandle;
 
