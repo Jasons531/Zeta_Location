@@ -224,6 +224,12 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 		
 		BoardInitMcu(  );
 		
+		if(HeartMode == LocatHandles->GetMode(  ))
+		{
+			LocatHandles->SetState(PATIONNULL);	
+			UserCheckGps(  );
+		}
+		
 		DEBUG(2,"wkup low-power now\r\n");
 	}
 }
