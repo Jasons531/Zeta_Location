@@ -61,8 +61,6 @@ extern 	uint8_t DeviceInfo[4];
 
 extern 	User_t User;
 
-extern 	bool  MotionBegain;
-
 void 	 	UserKeyPinInit(void);
 
 void	 	UserKeyWakeupHandle(void);

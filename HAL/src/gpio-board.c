@@ -12,32 +12,18 @@
 
 void EXTI0_1_IRQHandler( void )
 {
-#if !defined( USE_NO_TIMER )
- //   RtcRecoverMcuStatus( );
-#endif
-	
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_0 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_1 );
-
 }
 
 void EXTI2_3_IRQHandler( void )
 {
-#if !defined( USE_NO_TIMER )
- //   RtcRecoverMcuStatus( );
-#endif
-	
   HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_2 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_3 );
 }
 
-
 void EXTI4_15_IRQHandler( void )
-{
-#if !defined( USE_NO_TIMER )
- //   RtcRecoverMcuStatus( );
-#endif
-	
+{	
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_4 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_5 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_6 );
@@ -50,7 +36,6 @@ void EXTI4_15_IRQHandler( void )
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_13 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_14 );
 	HAL_GPIO_EXTI_IRQHandler( GPIO_PIN_15 );
-
 }
 
 /**
@@ -99,11 +84,6 @@ uint8_t CheckPowerkey(void)
 		}
 	}
 }
-
-uint32_t MMa8452qTime = 0;
-uint32_t MotionStopTime = 0;
-
-bool 		 MotionStart = false;
 
 /**
   * @brief  EXTI callback
@@ -191,7 +171,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					
 					BoardInitMcu(  );	
 										
-					MMa8452qTime = HAL_GetTick(  );
+					LocationInfor.CollectMoveTime = HAL_GetTick(  );
 					
 					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
 					{
@@ -199,7 +179,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 						
 						User.SaveSleepTime = GetCurrentHeartRtc(  );
 						
-						MotionStart = true;
+						LocationInfor.MotionStart = true;
 					}
 									
 					LocationInfor.MotionState = InvalidActive;
@@ -211,17 +191,17 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 				
 				LocationInfor.StopTimes = FlashRead16(MOVE_STOP_CONDITION_ADDR);
 				
-				MotionStopTime = HAL_GetTick(  ); ///记录停止运动时间
+				LocationInfor.CollectMoveStopTime = HAL_GetTick(  ); ///记录停止运动时间
 				
 				if(PATIONNULL != LocatHandles->BreakState(  ))///非GPS定位才开启
 				{
 					MMA8452MultipleRead(  );	
 											
-					if((HAL_GetTick(  ) - MMa8452qTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
+					if((HAL_GetTick(  ) - LocationInfor.CollectMoveTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
 					{
-						if(MotionStart) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+						if(LocationInfor.MotionStart) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
 						{				
-							MotionStart = false;
+							LocationInfor.MotionStart = false;
 							LocatHandles->SetMode( MotionMode );
 							LocationInfor.MotionState = SingleActive;
 						
@@ -235,7 +215,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 							break;
 						}
 					}
-					DEBUG_APP(2,"MMa8452qTime %d WorkMode = %d", HAL_GetTick(  ) - MMa8452qTime, LocatHandles->GetMode(  ));		
+					DEBUG_APP(2,"MMa8452qTime %d WorkMode = %d", HAL_GetTick(  ) - LocationInfor.CollectMoveTime, LocatHandles->GetMode(  ));		
 				}					
 			}
 

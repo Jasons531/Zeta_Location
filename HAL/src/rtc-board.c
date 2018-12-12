@@ -272,12 +272,7 @@ uint32_t ResetHeartSleepRtc(void)
 	RTC_TimeTypeDef  RTC_TimeStruct;
 	
 	uint32_t CurrentRtc = 0;
-		
-	HAL_RTC_WaitForSynchro(&RtcHandle);
-	
-	HAL_RTC_DeactivateAlarm( &RtcHandle, RTC_ALARM_A );
-	HAL_RTCEx_DeactivateWakeUpTimer( &RtcHandle );
-		
+					
 	HAL_NVIC_DisableIRQ(RTC_IRQn);
 				
 	HAL_RTC_GetTime(&RtcHandle, &RTC_TimeStruct, RTC_FORMAT_BIN);

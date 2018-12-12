@@ -14,8 +14,4 @@
 
 uint8_t CheckPowerkey(void);
 
-extern uint32_t MMa8452qTime;
-
-extern uint32_t MotionStopTime;
-
 #endif // __GPIO_MCU_H__

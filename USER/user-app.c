@@ -159,11 +159,6 @@ void UserSendLocation(uint8_t LocationCmd)
 
 uint32_t CurrentSleepTime = 0;
 
-extern uint32_t MMa8452qTime;
-extern uint32_t MotionStopTime;
-
-bool 	 MotionBegain = false;
-
 /*UserLocatMotion	：用户处理定位器移动信息
 *参数							：无
 *返回值						：无
@@ -220,9 +215,7 @@ void UserLocatMotion(void)
 		}	
 		////单次触发
 		else if(SingleActive == LocationInfor.MotionState)
-		{
-			MotionBegain = true;
-		
+		{		
 			DEBUG_APP(2,);
 			
 			LocatHandles->SetState(PATIONNULL);	
@@ -259,7 +252,7 @@ void UserLocatMotion(void)
 			User.SaveSleepTime = GetCurrentHeartRtc(  );
 			
 			DEBUG_APP(2,"LocationInfor.AlarmCycle = %d",LocationInfor.AlarmCycle);
-			SetRtcAlarm(30); //User.SleepTime
+			SetRtcAlarm(User.SleepTime); 
 			UserIntoLowPower(  );
 		}
 	}
@@ -275,20 +268,16 @@ void UserLocatMotionStop(void)
 
 	if(LocationInfor.MotionState == StopActive)///加速度停止
 	{	
-		if(MotionBegain)
-		{
-			MotionBegain = false;
-			DEBUG_APP(2,"---- MotionStopMode ----");
+		DEBUG_APP(2,"---- MotionStopMode ----");
 
-			LocatHandles->SetState(PATIONNULL);	
+		LocatHandles->SetState(PATIONNULL);	
 
-			UserCheckGps(  );
+		UserCheckGps(  );
 
-			while(PATIONNULL == LocatHandles->BreakState(  ));
+		while(PATIONNULL == LocatHandles->BreakState(  ));
 
-			UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
-			LocatHandles->SetMode( WaitMode );
-		}									
+		UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
+		LocatHandles->SetMode( WaitMode );
 	}			
 }
 
@@ -745,5 +734,10 @@ void UserReadFlash(void)
 		}
 	 
 	User.SleepTime = FlashRead32(HEART_CYCLE_ADDR);
-
+		
+	LocationInfor.AlarmCycle 	=	FlashRead32(ALARM_CYCLE_ADDR);
+	LocationInfor.GpsTime 		=	FlashRead32(GPS_LOCA_TIME_ADDR);	
+	LocationInfor.StopTimes		= FlashRead32(MOVE_CONDITION_ADDR);	
+	LocationInfor.MoveTimes 	= FlashRead32(MOVE_STOP_CONDITION_ADDR);
+	LocationInfor.AlarmEnable = FlashRead32(MOVE_ENABLE_ADDR);		
 }

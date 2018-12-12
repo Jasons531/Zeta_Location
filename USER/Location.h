@@ -141,12 +141,12 @@ typedef enum Motion_s
 
 typedef struct LocationI_s
 {
-	/************开始定位************/
-	bool 					BegainLocat;
+	bool 					MotionStart;
 	
+	/************软件版本************/	
 	uint8_t 			Versions;
 
-	//分钟
+	/************心跳时间/min************/
 	uint16_t 			HeartCycle; ///12H
 	
 	/************告警周期：0则只上报一次/分钟************/
@@ -169,6 +169,10 @@ typedef struct LocationI_s
 	
 	/************移动状态************/
 	Motion_t 			MotionState;
+	
+	uint32_t      CollectMoveTime;
+	
+	uint32_t			CollectMoveStopTime;
 
 }LocationIn_t;
 
