@@ -49,8 +49,11 @@ typedef struct UserZeta_s
 typedef struct User_s
 {
 	uint8_t 				BatState;
+	uint8_t 				CurrentDate;
+	uint8_t 				AlarmDate;
 	uint32_t 				SleepTime;
 	uint32_t        SaveSleepTime;
+	uint32_t				TimerCounter;
 	bool 						SleepWakeUp;
 	bool 						TestMode;
 }User_t;
@@ -60,6 +63,8 @@ extern 	UserZeta_t UserZetaCheck[];
 extern 	uint8_t DeviceInfo[4];
 
 extern 	User_t User;
+
+extern  bool setheart;
 
 void 	 	UserKeyPinInit(void);
 
@@ -79,29 +84,31 @@ void	 	UserLocatMotion(void);
 
 void	 	UserLocatMotionStop(void);
 
+void 		UserLocatDetect(void);
+
 void	 	UserLocatReport(void);
 
-void	 UserSend(Zeta_t *SendBuf);
+void	 	UserSend(Zeta_t *SendBuf);
 
-void	 UserSendGps(LocationIn_t LocatCmd);
+void	 	UserSendGps(LocationIn_t LocatCmd);
 
-void	 UserSendTest(void);
+void	 	UserSendTest(void);
 
-void	 UserDownCommand(void);
+void	 	UserDownCommand(void);
 
-void	 UserCheckCmd(UserZeta_t *UserZetaCheckCmd);
+void	 	UserCheckCmd(UserZeta_t *UserZetaCheckCmd);
 
-void	 UserSetHeart(uint8_t mode);
+void	 	UserSetHeart(uint8_t mode);
 
-void	 UserSetTimer(ZetaTimer_t Timer);
+void	 	UserSetTimer(ZetaTimer_t Timer);
 
-void	 UserCloseTimer(ZetaTimer_t Timer);
+void	 	UserCloseTimer(ZetaTimer_t Timer);
 
-void	 UserIntoLowPower(void);
+void	 	UserIntoLowPower(void);
 
-void	 String_Conversion(char *str, uint8_t *src, uint8_t len);
+void	 	String_Conversion(char *str, uint8_t *src, uint8_t len);
 
-void	 UserReadFlash(void);
+void	 	UserReadFlash(void);
 
 #endif /* __USER_APP_H */
 

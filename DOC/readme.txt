@@ -1,54 +1,25 @@
 
-	
-1：硬件IO接口图：
-
-								stm32L072CBT6
-SX1278						 _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-SPI     NSS	  --------	PA4 |					  		|
-		SCK	  --------	PA5 |    				  		|
-		MISO  --------	PA6 |					 		|
-		MOSI  --------	PA7 |					  		|
-						    |					  		|
-EXti	DIO0  --------	PB1 |                    		|
-		DIO1  --------	PB2 |					  		|
-		DIO2  --------	PB10|					  		|
-		DIO3  --------	PB11|					 		|
-		DIO4  --------	NC	|					  		|
-		DIO5  --------	NC	|					 		|
-							|					  		|
-CPIO	RESET --------	PB0 |					  		|
-		LoRa_Power ---  PB12|					 		|
-							|					 		|
-							|					 		|
-GPS	(UART2)					|					 		|	
-		TX	  --------  PA2	|					  		|	
-		RX	  --------  PA3	|					  		|	
-GPS_Power_ON  --------  PB7	|					  		|									
-							|					  		|
-485	(UART5)					|					 		|	
-		485_TX	------	PB3	|					  		|	
-		485_RX	------	PB4	|					  		|	
-		485_DE	------	PB5	|					  		|
-		12V_ON	------  PA8	|					  		|	
-							|					  		|
-							|					 		|	
-DEBUG(UART1)				|					  		|
-		TX   ---------	PA9	|					  		|
-		RX	 ---------  PA10|					  		|
-							|					  		|
-I2C							|					  		|
-		I2C2_SDA ----- PB14	|					  		|
-		I2C2_SCL ----- PB13	|					  		|
-							|					  		|
-电源管理使能  -------- PB9	|					  		|
-							|					  		|
-							|					  		|
-							|					  		|
-							|_ _ _ _ _ _ _ _ _ _ _ _ _ _|	
-
 
 
 版本说明：
+
+【V1.6.3】：ZETA-Location-V1.6
+功能：
+【1】：增加更改加速度传感器灵敏度指令
+
+【V1.6.2】：ZETA-Location-V1.5.2
+功能：
+【1】：MMA8452INT_1 IO更改为PC13
+
+【V1.6】：ZETA-Location-V1.5.1
+功能：
+【1】：解决移动报警、停止条件时间溢出问题；
+
+
+【V1.6】：ZETA-Location-V1.5
+功能：
+【1】：降低外部中断EXTI0_1_IRQn优先级 < uart_gps；
+【2】：MMA8452q延时降低为80ms
 
 【V1.5】：ZETA-Location-V1.5
 功能：

@@ -39,8 +39,8 @@
 #define  LED_GREEN									GPIO_PIN_5
 
 /**********************MMA8452INT_1_IO*******************/
-#define  MMA8452INT_1_IO						GPIOA
-#define  MMA8452INT_1								GPIO_PIN_8
+#define  MMA8452INT_1_IO						GPIOC
+#define  MMA8452INT_1								GPIO_PIN_13
 
 /**********************MMA8452INT_2_IO*******************/
 #define  MMA8452INT_2_IO						GPIOB

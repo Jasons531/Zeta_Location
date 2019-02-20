@@ -12,8 +12,8 @@
 #include "usart.h"
 #include "Debug.h"
 
-Zeta_t 							ZetaRecviceBuf = {0, 0, {0}, {0}, 0, Reset};
-Zeta_t 							ZetaSendBuf		 = {0, 0, {0}, {0}, 0, Reset};
+Zeta_t 							ZetaRecviceBuf = {0, 0, {0}, {0}, 0, Reset, true};
+Zeta_t 							ZetaSendBuf		 = {0, 0, {0}, {0}, 0, Reset, true};
 ZetaTimer_t					ZetaTimer;
 const ZetaHandle_t 	ZetaHandle = {ZetaInit, ZetaPowerOn, ZetaPowerOff, WakeupZetaEnable, WakeupZetaDisable, \
 																	ZetaInterrupt, ZetaSend, ZetaRecv, CalcCRC8, ZetaStatus, ZetaDownCommand};
@@ -109,7 +109,7 @@ void WakeupZetaDisable(void)
 void ZetaInterrupt(void)
 {	
 	///读取数据
-	HAL_Delay(100); ///延时 = Zeta串口稳定接收数据 + 串口超时时间
+	HAL_Delay(160); ///延时 = Zeta串口稳定接收数据 + 串口超时时间
 	
 	ZetaHandle.Recv(  );
 	
@@ -221,7 +221,9 @@ void ZetaSend(Zeta_t *ZetaBuf)
 */
 ZetaState_t ZetaRecv(void)
 {
-	if( HAL_GetTick(  )-ZetaRecviceBuf.Uart_time > 20 && UART_RX_LPUART1.Rx_State) 
+	ZetaRecviceBuf.States = Reset;
+	
+	if( HAL_GetTick(  )-ZetaRecviceBuf.Uart_time > 40 && UART_RX_LPUART1.Rx_State) 
 	{
 		UART_RX_LPUART1.Rx_State = false;
 		

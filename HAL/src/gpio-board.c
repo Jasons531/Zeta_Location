@@ -53,6 +53,7 @@ uint8_t CheckPowerkey(void)
 	{	
 		if(User.SleepWakeUp) ////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按回到休眠状态
 		{
+//			RtcHandle.State = HAL_RTC_STATE_RESET;
 			BoardInitClock(  );
 			
 			LedInit(  );
@@ -93,7 +94,8 @@ uint8_t CheckPowerkey(void)
   */
 void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 {	
-	uint32_t SleepTime = 0;
+	uint32_t TimeOut = 0;
+	
 	switch(GPIO_Pin)
 	{
 		case GPIO_PIN_0:  ///POWER_KEY
@@ -103,8 +105,7 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					PowerOff(  );
 				
 					/*************关闭加速度传感器************/
-					MX_I2C2_Init(  );
-					
+					MX_I2C2_Init(  );				
 					MMA845xStandby(  );
 					BoardEnterStandby(	);
 			}
@@ -112,22 +113,18 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 			{
 				DEBUG(2,"意外中断\r\n");
 				
-				////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态								
-				if(PATIONNULL != LocatHandles->BreakState(  ))
+				////休眠唤醒：或切换进待机模式---作用设备在RTC、PC13休眠模式，长按触发后可以进入待机关机模式，短按：设置RTC闹钟时间，回到休眠状态									
+				DEBUG_APP(2,"BreakState = %d %d",LocatHandles->BreakState(  ),User.SleepWakeUp);
+				if(WaitMode == LocatHandles->GetMode(  )) ////移动与停止模式，不还原休眠
 				{
-					SleepTime = GetCurrentSleepRtc(  );
-					
-					DEBUG(2,"AlarmTime = %d \r\n", SleepTime);
-								
-					LocatHandles->SetMode( WaitMode );
+					LocationInfor.MotionState = FailActive;
 					DEBUG_APP(2,);
-					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
-					UserIntoLowPower(  );
-				}			
+				}
+			
 			}
 		break;
 		
-		case GPIO_PIN_1:	///Zeta_Rev_Key
+		case GPIO_PIN_1:	///Zeta_Rev_Key：下行数据处理
 			
 			if(HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN)) ///防止中断误触发
 			{
@@ -136,87 +133,116 @@ void HAL_GPIO_EXTI_Callback( uint16_t GPIO_Pin )
 					BoardInitClock(  );
 					
 					BoardInitMcu(  );	
-					
-					User.SaveSleepTime = GetCurrentHeartRtc(  );
 				}		
-				DEBUG_APP(2,"PIN = %d",HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN));
+				DEBUG_APP(2,"PIN = %d setheart = %d SleepWakeUp = %d",HAL_GPIO_ReadPin(ZETAINT_IO,ZETAINT_PIN), setheart, User.SleepWakeUp);
 
 				ZetaHandle.Interrupt(  );	
 											
 				UserDownCommand(  );
 				
-				if(User.SleepWakeUp && (QueryLocaMode != LocatHandles->GetMode(  )) )
+				if(setheart) ///当前设置心跳模式
 				{
-					User.SleepWakeUp = false;				
+					DEBUG_APP(2," ******* Set AlarmTime ******** ");
+					
+					setheart = false;
+										
+					LocationInfor.HeartCycle = FlashRead16(HEART_CYCLE_ADDR);
+				
+					User.SleepTime = LocationInfor.HeartCycle * MINUTE;
+				
+					SetRtcAlarm(User.SleepTime); 
+					HAL_TIM_Base_Stop_IT(&htim2);
+					UserIntoLowPower(  );					
+				}		
+			  else
+				{	
+					if(User.SleepWakeUp && (QueryLocaMode != LocatHandles->GetMode(  )) ) ///休眠状态下，恢复休眠
+					{
+						User.SleepWakeUp = false;				
 
-					uint32_t SleepTime = ResetHeartSleepRtc(  );
-																								
-					DEBUG_APP(2,"AlarmTime = %d ", SleepTime);
-					SetRtcAlarm(SleepTime); ///闹钟时间-当前时间
-					UserIntoLowPower(  );
+						int32_t SleepTime = GetCurrentSleepRtc(  );
+																									
+						DEBUG_APP(2,"AlarmTime = %d ", SleepTime);
+						
+						if(SleepTime!=0)
+						{							
+							ResetRtcAlarm(User.AlarmDate, SleepTime);
+							HAL_TIM_Base_Stop_IT(&htim2);
+							UserIntoLowPower(  );
+						}
+						else
+						{
+							if(User.AlarmDate > User.CurrentDate)
+							{
+								ResetRtcAlarm(User.AlarmDate, SleepTime);
+								HAL_TIM_Base_Stop_IT(&htim2);
+								UserIntoLowPower(  );
+							}
+						}
+					}
 				}
 			}
 		
 		break;
 		
-		case GPIO_PIN_8:
-			
-			if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_8))
-			{			
-				if(User.SleepWakeUp)
+		case MMA8452INT_1:
+						
+			if(HAL_GPIO_ReadPin(MMA8452INT_1_IO,MMA8452INT_1))
+			{							
+				if(User.SleepWakeUp) ////休眠恢复系统时钟
 				{		
-					User.SleepWakeUp = false;		
-
 					BoardInitClock(  );
 					
 					BoardInitMcu(  );	
-										
-					LocationInfor.CollectMoveTime = HAL_GetTick(  );
 					
-					if(MotionMode != LocatHandles->GetMode(  )) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
-					{
-						LocatHandles->SetMode( WaitMode );
-						
-						User.SaveSleepTime = GetCurrentHeartRtc(  );
-						
-						LocationInfor.MotionStart = true;
-					}
-									
-					LocationInfor.MotionState = InvalidActive;
+					GetCurrentSleepRtc(  );
+
+					User.SleepWakeUp = false;	
 					
-					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");
+					DEBUG_APP(2,"---- LocatHandles = %d ---- ",LocatHandles->GetMode(  ));
+					
+					HAL_TIM_Base_Start_IT(&htim2);
 				}		
+				 				
+				if(!LocationInfor.MotionStart && !LocationInfor.SingleAlarm) ///心跳模式下，设置为移动模式，同时非一次报警模式
+				{
+					LocationInfor.MotionStart = true;
+					LocationInfor.CollectMoveTime = HAL_GetTick(  );  ///记录运动时间
+					
+					DEBUG_APP(2,"---- Motion Wake Up!!! ---- ");  ///需要添加fail保护机制	stopmode 	MotionStart = false;																
+				}				
 				
 				LocationInfor.MoveTimes = FlashRead16(MOVE_CONDITION_ADDR);
 				
 				LocationInfor.StopTimes = FlashRead16(MOVE_STOP_CONDITION_ADDR);
 				
-				LocationInfor.CollectMoveStopTime = HAL_GetTick(  ); ///记录停止运动时间
+				LocationInfor.ProtecProcess = true;
+								
+				MMA8452MultipleRead(  );	
 				
-				if(PATIONNULL != LocatHandles->BreakState(  ))///非GPS定位才开启
+				LocationInfor.CollectMoveStopTime = HAL_GetTick(  ); ///多次刷新记录停止运动时间，防止时间停止时间出错
+								
+				TimeOut  = LocationInfor.MoveTimes;
+				
+				TimeOut *= 1000;
+										
+				if((HAL_GetTick(  ) - LocationInfor.CollectMoveTime) > TimeOut) ///防止定位过程，多次开启重新定位标志
 				{
-					MMA8452MultipleRead(  );	
-											
-					if((HAL_GetTick(  ) - LocationInfor.CollectMoveTime) > LocationInfor.MoveTimes * 1000) ///防止定位过程，多次开启重新定位标志
-					{
-						if(LocationInfor.MotionStart) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
-						{				
-							LocationInfor.MotionStart = false;
-							LocatHandles->SetMode( MotionMode );
-							LocationInfor.MotionState = SingleActive;
-						
-							DEBUG_APP(2,"---- BegainLocat -----");
-							break;
-						}
-						else
+					if(InvalidActive == LocationInfor.MotionState) ///移动模式下不触发重新定位，同时RTC 移动周期唤醒
+					{				
+						if(WaitMode == LocatHandles->GetMode(  )) ///等待心跳执行完成
 						{
-							LocationInfor.MotionState = MultActive; ///定位器一直触发状态，等待周期性上报状态
-							DEBUG_APP(3,);
-							break;
-						}
+							LocatHandles->SetMode( MotionMode );
+						}		
+						LocationInfor.MotionState = SingleActive;
+													
+						LocatHandles->SetState(PATIONNULL);	
+											
+						DEBUG_APP(2,"*** BegainLocat  TimeOut:%d ***",TimeOut/1000);
+						break;
 					}
-					DEBUG_APP(2,"MMa8452qTime %d WorkMode = %d", HAL_GetTick(  ) - LocationInfor.CollectMoveTime, LocatHandles->GetMode(  ));		
-				}					
+				}
+				DEBUG_APP(3,"MMa8452qTime %d WorkMode = %d", HAL_GetTick(  ) - LocationInfor.CollectMoveTime, LocatHandles->GetMode(  ));		
 			}
 
 		break;

@@ -30,17 +30,14 @@ typedef uint64_t TimerTime_t;
  *
  * \remark The timer is based on the RTC
  */
-void RTC_Init(void);
+void 			RTC_Init(void);
 
-void RtcvRtcCalibrate(void);
+void 			RtcvRtcCalibrate(void);
 
-uint32_t GetCurrentSleepRtc(void);
+uint32_t 	GetCurrentSleepRtc(void);
 
-uint32_t GetCurrentHeartRtc(void);
+void 			SetRtcAlarm(uint16_t time);
 
-uint32_t ResetHeartSleepRtc(void);
-
-void SetRtcAlarm(uint16_t time);
-
+void 			ResetRtcAlarm(uint8_t date, uint16_t time);
 
 #endif // __RTC_BOARD_H__

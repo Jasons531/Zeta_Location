@@ -52,7 +52,7 @@ int main(void)
 		
 	/**************电源开关处理************/
 	 UserKeyWakeupHandle(  );	
-	
+		
 	 UserCheckGps(  );
 											 	 						
 	 UserCheckCmd(&UserZetaCheck[MAC]);
@@ -62,19 +62,20 @@ int main(void)
 	 UserCheckCmd(&UserZetaCheck[RSSI]);
 
 	 UserSetHeart(0x00);
-	 
-	 LocationInfor.MotionState = InvalidActive;
-	 
-	 LocatHandles->SetMode( HeartMode );
-	 
+
 	 UserLocationVerion( QUERY_SEND_VER );
 	 
+	 ///通讯建立后再开启加速度传感器中断识别
+	 HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+	 
+	 LocationInfor.HeartArrive = true;
+	  
 	 DEBUG_APP(2,"Battery = %d", CheckBattery(  ));
 	 
-		while (1)
+	while (1)
    {			 
-			UserLocatReport(  ); 
-	 } 
+		UserLocatReport(  ); 
+	} 
 }
 
 

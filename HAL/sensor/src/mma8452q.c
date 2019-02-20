@@ -10,6 +10,7 @@
 */
 #include "mma8452q.h"
 #include "i2c.h"
+#include <math.h>
 
 ///瞬态检测
 #define		TRANSIENT				0
@@ -77,26 +78,43 @@ void MMA8452InterruptPinInit(void)
 
 /*
 *MMA845xInit：初始化ODR、power_mode
-*参数			：无
+*参数			：mma8452参数
 *返回			：无
 */
-void MMA845xInit (void)
-{
+void MMA845xInit (LocationIn_t LocationInfors)
+{	
+	HAL_I2C_MspInit(&hi2c2);
+	hi2c2.State = HAL_I2C_STATE_RESET;
+	
 	MX_I2C2_Init(  );
 	
 	MMA8452InterruptPinInit(  );
 		
 	MMA8452xSetPowerMode( 0x1F );  ///Auto-Sleep+Low_Power
 	
-	MMA845xSetDataRate( 0x40 | DATA_RATE_80MS ); ///Sleep_Freq + 12.5hz
+	MMA845xSetDataRate( LocationInfors.Mma8452DaRte ); ///Sleep_Freq + 12.5hz 0x40 | DATA_RATE_80MS
 
 	MMA845xSetPassFilter( HPF_OUT_MASK );///高通or低通滤波
 
 	MMA845xEnterActiveG(FULL_SCALE_2G);
 
-	MMA8452xInterrupt(  );
+	MMA8452xInterrupt( LocationInfors.Mma8452MCount );
 
 	MMA845xID(  );
+	DEBUG_APP(2,"mmadate = 0x%02x, mmacout = 0x%02x",LocationInfors.Mma8452DaRte, LocationInfors.Mma8452MCount);
+}
+
+/*
+*MMA845xSetParam	：设置ODR、Count参数
+*参数					：mma8452参数
+*返回					：无
+*/
+void MMA845xSetParam(LocationIn_t LocationInfors)
+{
+	MMA845xSetDataRate( LocationInfors.Mma8452DaRte ); ///Sleep_Freq + 12.5hz 0x40 | DATA_RATE_80MS
+	MMA8452xInterrupt( LocationInfors.Mma8452MCount );
+	
+	DEBUG_APP(2,"mmadate = 0x%02x, mmacout = 0x%02x",LocationInfors.Mma8452DaRte, LocationInfors.Mma8452MCount);
 }
 
 /*
@@ -192,13 +210,16 @@ void MMA845xSetPassFilter(uint8_t Filtered)
 *参数								：无
 *返回								：无
 */
-void MMA8452MultipleRead(void)
+uint16_t MMA8452MultipleRead(void)
 {
 	uint8_t wdata = 0x01;
 	uint8_t rdata[6] = {0};
 	uint8_t ZYXDR = 0;
 	
-	uint16_t Xdata, Ydata, Zdata = 0;
+	uint32_t Xdata, Ydata, Zdata = 0;
+	
+	uint32_t Sqrtdata = 0;
+	
 	MMA845xActive(  );
 
 	ZYXDR = IIC_RegRead(MA8452Q_ADDR,STATUS_00_REG);
@@ -216,30 +237,30 @@ void MMA8452MultipleRead(void)
 		if(Xdata>0x0800) /////负数：无符号表达
 		{
 			Xdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"X = -%.3f ",Xdata * 0.001);
+			DEBUG(3,"X = -%.3f ",Xdata * 0.001);
 		}
 		else
-			DEBUG(2,"X = %.3f ",Xdata * 0.001);
+			DEBUG(3,"X = %.3f ",Xdata * 0.001);
 		
 		Ydata = (rdata[2] << 4) | (rdata[3] >> 4);
 				
 		if(Ydata>0x0800) /////负数：无符号表达
 		{
 			Ydata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"Y = -%.3f ",Ydata * 0.001);
+			DEBUG(3,"Y = -%.3f ",Ydata * 0.001);
 		}
 		else
-			DEBUG(2,"Y = %.3f ",Ydata * 0.001);
+			DEBUG(3,"Y = %.3f ",Ydata * 0.001);
 
 		Zdata = (rdata[4] << 4) | (rdata[5] >> 4);
 		
 		if(Zdata>0x0800) /////负数：无符号表达
 		{
 			Zdata = 0x0f00 - 0x0800 + 1;
-			DEBUG(2,"Z = -%.3f \r\n",Zdata * 0.001);
+			DEBUG(3,"Z = -%.3f \r\n",Zdata * 0.001);
 		}
 		else
-			DEBUG(2,"Z = %.3f \r\n",Zdata * 0.001);
+			DEBUG(3,"Z = %.3f \r\n",Zdata * 0.001);
 		
 		DEBUG(3,"data: %d %d %d %d %d %d \r\n",rdata[0],rdata[1],rdata[2],rdata[3],rdata[4],rdata[5]);
 		
@@ -263,6 +284,10 @@ void MMA8452MultipleRead(void)
 			DEBUG_APP(3,"data_temp = %02x data_temp3 = %02x\r\n",data_temp,data_temp3);
 		}		
 	}
+	
+	Sqrtdata = pow(Xdata,2) + pow(Ydata,2) + pow(Zdata,2);
+	
+	return (uint16_t)sqrt(Sqrtdata);
 }
 
 /*
@@ -346,8 +371,8 @@ void MMA845xCorrectReg(void)
 
 /*
 *MMA845xEnterActive2G	：Enter Active g模式
-*参数									：无 
-*返回									：无
+*参数							：无 
+*返回							：无
 */
 void MMA845xEnterActiveG(uint8_t FullG)
 {
@@ -362,7 +387,7 @@ void MMA845xEnterActiveG(uint8_t FullG)
 /*
 *运动检测、瞬态检测只能二选一，不能同时支持，同时支持暂没调通
 */
-void MMA8452xInterrupt(void)
+void MMA8452xInterrupt(uint8_t Mcount)
 {
 	MMA845xStandby(  );
 
@@ -374,8 +399,8 @@ void MMA8452xInterrupt(void)
 	IIC_RegWrite(MA8452Q_ADDR, FT_MT_THS_1_REG, 0x80 | 0x10); ///越高，灵敏度越高
 	//阈值寄存器0~127，阈值的最低分辨率为0.063g/LSB. 1.0g/0.063g=15.87. 四舍五入为16，阈值设置为10H
 	
-	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, 0x03); //12.5hz 80 ms debounce timing 160ms
-///运动检测设置END
+	IIC_RegWrite(MA8452Q_ADDR, FF_MT_COUNT_1_REG, Mcount); //12.5hz 80 ms debounce timing 80ms 0x01
+	///运动检测设置END
 
 	IIC_RegWrite(MA8452Q_ADDR,CTRL_REG3, 0X0A);// PP_OD_MASK 注意：IPOL = 0 :该位代表中断脉冲当前是一直处于高电平，MCU端采用下降沿触发，否则失败
 	/*

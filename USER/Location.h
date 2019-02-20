@@ -19,10 +19,10 @@
 #include "stm32l0xx_hal.h"
 #include "zeta.h"
 
-#define 	VERSIOS												0x20
-#define		MSEC													1000
-#define		MINUTE												60
-#define 	HOUR													60
+#define 	VERSIOS										0x23
+#define	MSEC											1000
+#define	MINUTE										60
+#define 	HOUR											60
 
 /**********************上行命令：start*********************//*
 ************心跳上报，定位成功************/
@@ -41,7 +41,7 @@
 #define		MOVE_STATIC_LOCA_SUCESS				0x03
 	
 /************资产静止，定位失败************/
-#define		MOVE_STATIC_LOCA_FAIL					0x04
+#define		MOVE_STATIC_LOCA_FAIL				0x04
 
 /************查询反馈，定位成功************/
 #define		QUERY_FEED_LOCA_SUCESS				0x05
@@ -50,28 +50,28 @@
 #define		QUERY_FEED_LOCA_FAIL					0x06
 
 /************发送版本ID：上电第一次发送************/
-#define		QUERY_SEND_VER								0x80	
+#define		QUERY_SEND_VER							0x80	
 
 /**********************上行命令：end*********************/
 
 /**********************下行命令：start*********************//*
 ************设置心跳周期 ：分钟************/
-#define 	HEART_SET_CYCLE								0x40
+#define 	HEART_SET_CYCLE							0x40
 
 /************查询心跳周期 ：分钟************/
 #define 	HEART_CHECK_CYCLE							0x41
 
 /************设置告警周期************/
-#define		ALARM_SET_CYCLE								0x42
+#define		ALARM_SET_CYCLE						0x42
 	
 /************查询告警周期************/
-#define		ALARM_CHECK_CYCLE							0x43
+#define		ALARM_CHECK_CYCLE						0x43
 
 /************设置定位时间************/
-#define		GPS_SET_LOCA_TIME							0x44
+#define		GPS_SET_LOCA_TIME						0x44
 	
 /************查询定位时间************/
-#define		GPS_CHECK_LOCA_TIME						0x45
+#define		GPS_CHECK_LOCA_TIME					0x45
 	
 /************设置移动条件************/
 #define		MOVE_SET_MOVE_CONDITION				0x50
@@ -92,16 +92,19 @@
 #define		MOVE_CHECK_MOVE_ENABLE				0x71
 		
 /************查询版本ID************/
-#define		QUERY_CHECK_VER								0x81
+#define		QUERY_CHECK_VER						0x81
+
+/************设置MMA8452 datarate and mt_count************/
+#define 		SET_MMA8452_PARAM						0x90
+
+/************查询MMA8452设置参数************/
+#define		GET_MMA8452_PARAM						0x91
 
 /************查询设备位置************/
-#define		QUERY_DEV_LOCA								0xE0
+#define		QUERY_DEV_LOCA							0xE0
 	
-/************查询振动开关状态************/
-#define		QUERY_OSC_STATE								0xE1
-
 /************查询设备信息************/
-#define		QUERY_DEV_INFOR								0xE2
+#define		QUERY_DEV_INFOR						0xE2
 /**********************下行命令：end*********************/
 
 typedef enum Locatmode_s
@@ -116,7 +119,7 @@ typedef enum Locatmode_s
 	MotionMode			= 2,
 	
 	/*********运动停止模式********/
-	MotionStopMode	= 3,
+	MotionStopMode		= 3,
 	
 	QueryLocaMode		= 4,
 }Locatmode_t;
@@ -141,46 +144,64 @@ typedef enum Motion_s
 
 typedef struct LocationI_s
 {
+	/************上电启动心跳活跃状态************/
+	bool 					HeartArrive;
+	
+	/************振动传感器移动报警执行状态************/
+	bool					MotionHandle;
+	
+	/************振动传感器一次报警执行状态************/
+	bool 					SingleAlarm;
+	
+	/************振动传感器开始振动************/
 	bool 					MotionStart;
 	
+	/************振动传感器异常触发保护机制************/
+	bool 					ProtecProcess;
+	
 	/************软件版本************/	
-	uint8_t 			Versions;
+	uint8_t 				Versions;
 
 	/************心跳时间/min************/
 	uint16_t 			HeartCycle; ///12H
 	
 	/************告警周期：0则只上报一次/分钟************/
-	uint8_t 			AlarmCycle;	///5MIN
+	uint8_t 				AlarmCycle;	///5MIN
+	
+	/************MMX8452工作频率：sleep_freq + data_rate************/
+	uint8_t 				Mma8452DaRte;
+	
+	/************MMX8452震动识别次数************/
+	uint8_t				Mma8452MCount;	
 	
 	/************GPS定位超时时间/秒************/
-	uint16_t  		GpsTime;   ///120s
+	uint16_t  			GpsTime;   ///120s
 	
 	/************资产移动条件/秒************/
-	uint8_t	  		MoveTimes; ///5s
+	uint8_t	  			MoveTimes; ///5s
 	
 	/************资产停止条件/秒************/
-	uint8_t	  		StopTimes; ///5s
+	uint8_t	  			StopTimes; ///5s
 	
 	/************资产移动开关：0：不告警，1：告警************/
-	uint8_t   		AlarmEnable; ///1
+	uint8_t   			AlarmEnable; ///1
 	
 	/********************定位器工作模式******************/
-	Locatmode_t 	Mode;
+	Locatmode_t 		Mode;
 	
 	/************移动状态************/
 	Motion_t 			MotionState;
 	
-	uint32_t      CollectMoveTime;
+	uint32_t      		CollectMoveTime;
 	
-	uint32_t			CollectMoveStopTime;
-
+	uint32_t				CollectMoveStopTime;
 }LocationIn_t;
 
 typedef struct LocatH_s
 {
 	char 					Buf[128];
 	
-	uint8_t 			*(*Cmd)( uint8_t *ZRev );
+	uint8_t 			*(*Cmd)( Zeta_t *ZRev );
 
 	uint8_t	 			*(*GetLoca)( char *GpsLocation, uint8_t LocationCmd );
 
@@ -204,7 +225,7 @@ extern 	LocatH_t 			*LocatHandles;
 
 extern	void 					LocationInit( void );
 
-extern 	uint8_t 			*LocationCmd( uint8_t *ZRev );
+extern 	uint8_t 			*LocationCmd( Zeta_t *ZRev );
 
 extern 	uint8_t				*GetLocation( char *GpsLocation, uint8_t LocationCmd );
 

@@ -17,19 +17,20 @@
 
 #include "stm32l0xx_hal.h"
 
-//#include "System.h"
+#include "Location.h"
 
 #define 	MA8452Q_ADDR							0x38
 
 #define 	SlaveAddressIIC						MA8452Q_ADDR
 
-#define   SCISendString							printf
+#define  SCISendString							printf
 
 #define 	MA8452Q_STATE							0x00
-#define 	MA8452Q_INT_SOURCE				0x0C
+#define 	MA8452Q_INT_SOURCE					0x0C
 
 #define 	MA8452Q_ID								0x0D
-#define 	MA8452Q_PL_CFG						0x11
+#define 	MA8452Q_PL_CFG							0x11
+
 
 /***********************************************************************************************
 **
@@ -576,10 +577,10 @@ enum
 #define ASLP_RATE_MASK        0xC0
 #define DR_MASK               0x38
 //                      
-#define ASLP_RATE_20MS        0x00
-#define ASLP_RATE_80MS        ASLP_RATE0_MASK
-#define ASLP_RATE_160MS       ASLP_RATE1_MASK
-#define ASLP_RATE_640MS       ASLP_RATE1_MASK+ASLP_RATE0_MASK
+#define ASLP_RATE_20MS        0x00            						//50hz
+#define ASLP_RATE_80MS        ASLP_RATE0_MASK  						//12.5hz
+#define ASLP_RATE_160MS       ASLP_RATE1_MASK  						//6.25hz
+#define ASLP_RATE_640MS       ASLP_RATE1_MASK+ASLP_RATE0_MASK	//1.56hz
 //
 #define DATA_RATE_1250US      0x00
 #define DATA_RATE_2500US      DR0_MASK
@@ -700,47 +701,37 @@ typedef union
 } tword;
 
 
-void MMA845xID(void);
+void 		 	MMA845xID(void);
 
-/***********************************************************************************************\
-* Public type definitions
-\***********************************************************************************************/
+uint8_t 		IIC_RegRead(uint16_t address, uint8_t reg);
 
-/***********************************************************************************************\
-* Public memory declarations
-\***********************************************************************************************/
+void 			IIC_RegWrite(uint16_t address, uint8_t reg, uint8_t data);
 
-/***********************************************************************************************\
-* Public prototypes
-\***********************************************************************************************/
+void 			MMA845xInit(LocationIn_t LocationInfors);
 
-uint8_t IIC_RegRead(uint16_t address, uint8_t reg);
+void 			MMA845xSetParam(LocationIn_t LocationInfors);
 
-void IIC_RegWrite(uint16_t address, uint8_t reg, uint8_t data);
+void 			MMA8452InterruptPinInit(void);
 
-void MMA845xInit(void);
+void 			MMA845xStandby(void);
 
-void MMA8452InterruptPinInit(void);
+void 			MMA845xActive(void);
 
-void MMA845xStandby(void);
+void 			MMA845xSetDataRate(uint8_t DataRateValue);
 
-void MMA845xActive(void);
+void 			MMA8452xSetPowerMode(uint8_t	PowerMode);
 
-void MMA845xSetDataRate(uint8_t DataRateValue);
+void 			MMA845xSetPassFilter(uint8_t Filtered);
 
-void MMA8452xSetPowerMode(uint8_t	PowerMode);
+uint16_t 	MMA8452MultipleRead(void);
 
-void MMA845xSetPassFilter(uint8_t Filtered);
+void 			MMA845xCorrectReg(void);
 
-void MMA8452MultipleRead(void);
+void 			MMA845xEnterActiveG(uint8_t FullG);
 
-void MMA845xCorrectReg(void);
+void 			MMA845xOverSampMode(uint8_t Mode);
 
-void MMA845xEnterActiveG(uint8_t FullG);
-
-void MMA845xOverSampMode(uint8_t Mode);
-
-void MMA8452xInterrupt(void);
+void 			MMA8452xInterrupt(uint8_t Mcount);
 
 #ifdef __cplusplus
 }

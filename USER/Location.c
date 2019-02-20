@@ -1,7 +1,7 @@
 /*
 **************************************************************************************************************
 *	@file		Location.c
-*	@author Jason
+*	@author  Jason
 *	@version 
 *	@date    
 *	@brief	资产定位器处理文件
@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "gps.h"
 
-LocationIn_t LocationInfor = {false, VERSIOS, 12*HOUR, 5, 2*MINUTE, 5, 5, 1, HeartMode, InvalidActive, 0, 0}; //30-2*MINUTE 12*HOUR
+LocationIn_t LocationInfor = {false, false, false, false, false, VERSIOS, 12*HOUR, 5, 0x68, 3, 0.5*MINUTE, 5, 5, 1, HeartMode, InvalidActive, 0, 0}; //30-2*MINUTE 12*HOUR
 
 LocatH_t 	LocatHandle;
 
@@ -26,11 +26,11 @@ LocatH_t 	*LocatHandles;
 */
 void LocationInit( void )
 {
-	LocatHandle.Cmd				 = LocationCmd;
+	LocatHandle.Cmd			 = LocationCmd;
 	LocatHandle.GetLoca		 = GetLocation;
 	LocatHandle.CheckGps 	 = LocationCheckGps;
-	LocatHandle.SetState	 = LocationSetState;
-	LocatHandle.BreakState = LocationBreakState;
+	LocatHandle.SetState	 	 = LocationSetState;
+	LocatHandle.BreakState   = LocationBreakState;
 	LocatHandle.SetMode		 = LocationSetMode;
 	LocatHandle.GetMode		 = LocationGetMode;
 	
@@ -38,26 +38,30 @@ void LocationInit( void )
 	
 	LocatHandles->SetState(PATIONNULL);
 	
-	LocatHandles->SetMode(HeartMode);
+	LocatHandles->SetMode(WaitMode);
+	
+	LocationInfor.MotionState = InvalidActive;
 }
 
-/*LocationCmd：定位器下行命令处理
-*参数		 ：Zeta_t
-*返回		 ：处理缓存区，提供zeta应答
+/*LocationCmd ：定位器下行命令处理
+*参数		 	  ：Zeta_t
+*返回		 	  ：处理缓存区，提供zeta应答
 */
-uint8_t *LocationCmd(uint8_t *ZRev)
+uint8_t *LocationCmd(Zeta_t *ZRev)
 {
-	uint8_t	*HeartBuf = ZRev;
+	uint8_t	*HeartBuf = ZRev->RevBuf;
+	
+	uint16_t Sqrtdata = 0;
 	
 	ZetaSendBuf.Len = 0;
 		
-	HeartBuf[ZetaSendBuf.Len++] = ZRev[0];
+	HeartBuf[ZetaSendBuf.Len++] = ZRev->RevBuf[0];
 	
-	switch(ZRev[0])
+	switch(ZRev->RevBuf[0])
 	{
-		case HEART_SET_CYCLE: ///设置心跳周期
-			LocationInfor.HeartCycle 	= (ZRev[ZetaSendBuf.Len++] << 8);
-			LocationInfor.HeartCycle |= ZRev[ZetaSendBuf.Len++];
+		case HEART_SET_CYCLE: ///设置心跳周期		
+			LocationInfor.HeartCycle  = (ZRev->RevBuf[ZetaSendBuf.Len++] << 8);
+			LocationInfor.HeartCycle |= ZRev->RevBuf[ZetaSendBuf.Len++];
 			
 			DEBUG_APP(2,"HeartCycle = %04X %02X %02X %02X\r\n",LocationInfor.HeartCycle, HeartBuf[0],HeartBuf[1],HeartBuf[2]);
 			///保存flash
@@ -66,8 +70,7 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case HEART_CHECK_CYCLE: ///查询心跳
-		
-			LocationInfor.HeartCycle 		= FlashRead16(HEART_CYCLE_ADDR);;			
+			LocationInfor.HeartCycle 	 = FlashRead16(HEART_CYCLE_ADDR);;			
 			
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 8)&0xff;
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 0)&0xff;
@@ -77,25 +80,43 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case ALARM_SET_CYCLE:	///设置告警周期
-			LocationInfor.AlarmCycle 		= ZRev[ZetaSendBuf.Len++];
-			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.AlarmCycle;
+			LocationInfor.AlarmCycle  = ZRev->RevBuf[ZetaSendBuf.Len++];
+			HeartBuf[ZetaSendBuf.Len] = LocationInfor.AlarmCycle;
+		
+			uint16_t AlarmCycle = 0;
+		
+			if(LocationInfor.AlarmCycle == 0)
+			{
+				AlarmCycle = 0xffee;
+			}
+			else
+			{
+				AlarmCycle = LocationInfor.AlarmCycle;
+			}
 			
 			///保存flash
-			FlashWrite16(ALARM_CYCLE_ADDR, (uint16_t *)&LocationInfor.AlarmCycle,1);	
+			FlashWrite16(ALARM_CYCLE_ADDR, &AlarmCycle,1);	
 		
 		break;
 		
 		case ALARM_CHECK_CYCLE: ///查询告警
 			
-			LocationInfor.AlarmCycle		= FlashRead16(ALARM_CYCLE_ADDR);		
+			if(FlashRead16(ALARM_CYCLE_ADDR) == 0xffee)
+			{
+				LocationInfor.AlarmCycle = 0;
+			}
+			else
+			{			
+				LocationInfor.AlarmCycle = FlashRead16(ALARM_CYCLE_ADDR);
+			}				
 
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.AlarmCycle >> 0)&0xff;
 		
 		break;
 		
 		case GPS_SET_LOCA_TIME: ///定位超时时间
-			LocationInfor.GpsTime = ZRev[ZetaSendBuf.Len++] << 8;
-			LocationInfor.GpsTime |= ZRev[ZetaSendBuf.Len++] << 0;	
+			LocationInfor.GpsTime = ZRev->RevBuf[ZetaSendBuf.Len++] << 8;
+			LocationInfor.GpsTime |= ZRev->RevBuf[ZetaSendBuf.Len++] << 0;	
 			
 			DEBUG_APP(2,"LocationInfor.GpsTime = %04X %02X %02X\r\n",LocationInfor.GpsTime, HeartBuf[1],HeartBuf[2]);
 			
@@ -105,7 +126,6 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case GPS_CHECK_LOCA_TIME: 
-			
 			LocationInfor.GpsTime = FlashRead16(GPS_LOCA_TIME_ADDR);
 			
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.GpsTime >> 8)&0xff;
@@ -116,50 +136,56 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		case MOVE_SET_MOVE_CONDITION: ///设置移动判定时间
-			LocationInfor.MoveTimes 		= ZRev[ZetaSendBuf.Len++] << 0;
+			LocationInfor.MoveTimes 	= ZRev->RevBuf[ZetaSendBuf.Len++] << 0;
 			HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.MoveTimes;
 			
 			///保存flash
 			FlashWrite16(MOVE_CONDITION_ADDR,(uint16_t *)&LocationInfor.MoveTimes,1);	
+		
+			DEBUG_APP(2,"LocationInfor.MoveTimes = %d\r\n",LocationInfor.MoveTimes);
 			
 		break;
 		
 		case MOVE_CHECK_MOVE_CONDITION:
-			
-			LocationInfor.MoveTimes 		= FlashRead16(MOVE_CONDITION_ADDR);
+			LocationInfor.MoveTimes 	 = FlashRead16(MOVE_CONDITION_ADDR);
 
 			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.MoveTimes;
+		
+			DEBUG_APP(2,"LocationInfor.MoveTimes = %d\r\n",LocationInfor.MoveTimes);
 		
 		break;
 		
 		case MOVE_SET_STOP_CONDITION: ///设置停止移动判定时间
-			LocationInfor.StopTimes 		= ZRev[ZetaSendBuf.Len++] << 0;
+			LocationInfor.StopTimes 	= ZRev->RevBuf[ZetaSendBuf.Len++] << 0;
 			HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.StopTimes;
 		
 			///保存flash
 			FlashWrite16(MOVE_STOP_CONDITION_ADDR,(uint16_t *)&LocationInfor.StopTimes,1);
+		
+			DEBUG_APP(2,"LocationInfor.StopTimes = %d\r\n",LocationInfor.StopTimes);
 	
 		break;
 		
 		case MOVE_CHECK_STOP_CONDITION:
-		
-			LocationInfor.StopTimes			= FlashRead16(MOVE_STOP_CONDITION_ADDR);		
+			LocationInfor.StopTimes		 = FlashRead16(MOVE_STOP_CONDITION_ADDR);		
 			
 			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.StopTimes;	
+		
+			DEBUG_APP(2,"LocationInfor.StopTimes = %d\r\n",LocationInfor.StopTimes);
+		
 		break;
 		
 		case MOVE_SET_MOVE_ENABLE: ///设置告警开关
-			LocationInfor.AlarmEnable 	= ZRev[ZetaSendBuf.Len++] << 0;
+			LocationInfor.AlarmEnable 	= ZRev->RevBuf[ZetaSendBuf.Len++] << 0;
 			HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.AlarmEnable;
 			
 			///保存flash
-			FlashWrite16(MOVE_ENABLE_ADDR,(uint16_t *)&LocationInfor.AlarmEnable,1);	
+			FlashWrite16(MOVE_ENABLE_ADDR,(uint16_t *)&LocationInfor.AlarmEnable,1);				
 	
 		break;
 		
 		case MOVE_CHECK_MOVE_ENABLE:
-			
-			LocationInfor.AlarmEnable 	= FlashRead16(MOVE_ENABLE_ADDR);		
+			LocationInfor.AlarmEnable 	 = FlashRead16(MOVE_ENABLE_ADDR);		
 
 			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.AlarmEnable;
 	
@@ -169,38 +195,98 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.Versions;	
 		break;
 		
+		case SET_MMA8452_PARAM:
+			
+			switch(ZRev->RevBuf[1])
+			{
+				case 0x01: //50hz				
+					LocationInfor.Mma8452DaRte = ASLP_RATE_20MS | DATA_RATE_20MS;
+					break;
+				
+				case 0x02: //12.5hz
+					LocationInfor.Mma8452DaRte = ASLP_RATE_80MS | DATA_RATE_80MS;			
+					break;
+				
+				case 0x03: ///6.25hz
+					LocationInfor.Mma8452DaRte = ASLP_RATE_160MS | DATA_RATE_160MS;
+					break;
+				
+				case 0x04: ///1.56hz
+					LocationInfor.Mma8452DaRte = ASLP_RATE_640MS | DATA_RATE_640MS;
+					break;
+				
+				default:					
+					break;
+			}
+			
+			if(ZRev->RevBuf[2] == 0x00)
+			{
+				ZRev->Ack	= false;
+				break;	
+			}
+			
+			LocationInfor.Mma8452MCount = ZRev->RevBuf[2];
+
+			///保存flash
+			FlashWrite16(MMA8452_DATA_RATE,(uint16_t *)&LocationInfor.Mma8452DaRte,1);
+			FlashWrite16(MMA845_MT_COUNT,  (uint16_t *)&LocationInfor.Mma8452MCount,1);
+			
+			MMA845xInit(LocationInfor);
+			
+			HeartBuf[ZetaSendBuf.Len++] = ZRev->RevBuf[1];	
+			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.Mma8452MCount;
+		break;
+		
+		case GET_MMA8452_PARAM:
+			
+			LocationInfor.Mma8452DaRte  = FlashRead16(MMA8452_DATA_RATE);
+			LocationInfor.Mma8452MCount = FlashRead16(MMA845_MT_COUNT);
+		
+			switch(LocationInfor.Mma8452DaRte)
+			{
+				case ASLP_RATE_20MS | DATA_RATE_20MS:
+					HeartBuf[ZetaSendBuf.Len++] = 0x01;
+				break;
+				
+				case ASLP_RATE_80MS | DATA_RATE_80MS:
+					HeartBuf[ZetaSendBuf.Len++] = 0x02;
+				break;
+				
+				case ASLP_RATE_160MS | DATA_RATE_160MS:
+					HeartBuf[ZetaSendBuf.Len++] = 0x03;
+				break;
+				
+				case ASLP_RATE_640MS | DATA_RATE_640MS:
+					HeartBuf[ZetaSendBuf.Len++] = 0x04;
+				break;
+				
+				default:
+					break;				
+			}
+				
+			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.Mma8452MCount;	
+			
+		break;
+		
 		case QUERY_DEV_LOCA:
-		///启动反馈命令: QUERY_FEED_BACK		
-//		if(LocatHandles->BreakState(  ) == PATIONDONE)
-//		{			
-//			memcpy1(&HeartBuf[ZetaSendBuf.Len], LocatHandles->GetLoca( LocatHandles->Buf, QUERY_FEED_LOCA_SUCESS ), 8);
-//						
-//			ZetaSendBuf.Len += 8;
-//		}
-//		else if(LocatHandles->BreakState(  ) == PATIONFAIL)
-//		{			
-//			HeartBuf[ZetaSendBuf.Len++] = QUERY_FEED_LOCA_FAIL << 2;
-//		}		
+		///启动反馈命令: QUERY_FEED_BACK	
 			LocatHandles->SetMode( QueryLocaMode );
 		
 			DEBUG_APP(2,"QUERY_DEV_LOCA = %d",QUERY_DEV_LOCA);
 
 		break;
-		
-		case QUERY_OSC_STATE: ///加速度传感器数值
-		///HeartBuf[1] = 振动开关值(实际指哪?);	
-			
-		break;
-		
+				
 		case QUERY_DEV_INFOR:
-//		HeartBuf[ZetaSendBuf.Len++] = 初始振动开关数值
-//		HeartBuf[ZetaSendBuf.Len++]
+			Sqrtdata = MMA8452MultipleRead(  );
 		
-			LocationInfor.HeartCycle 		= FlashRead16(HEART_CYCLE_ADDR);
+			HeartBuf[ZetaSendBuf.Len++] = (Sqrtdata >> 8)&0xff;
+			HeartBuf[ZetaSendBuf.Len++] = (Sqrtdata >> 0)&0xff;
+		
+			LocationInfor.HeartCycle 	 = FlashRead16(HEART_CYCLE_ADDR);
 
-			LocationInfor.AlarmCycle 		= FlashRead16(ALARM_CYCLE_ADDR);
+			LocationInfor.AlarmCycle 	 = FlashRead16(ALARM_CYCLE_ADDR);
 			
-			LocationInfor.AlarmEnable 	= FlashRead16(MOVE_ENABLE_ADDR);		
+			LocationInfor.AlarmEnable 	 = FlashRead16(MOVE_ENABLE_ADDR);		
 			
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 8)&0xff;
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.HeartCycle >> 0)&0xff;
@@ -211,7 +297,8 @@ uint8_t *LocationCmd(uint8_t *ZRev)
 		break;
 		
 		default:
-			
+			ZRev->Ack	= false; 
+		
 		break;
 	}
 	
@@ -289,8 +376,8 @@ uint8_t *GetLocation(char *GpsLocation, uint8_t LocationCmd)
 }
 
 /*LocationCheck：定时扫描GPS定位信息
-*参数				 	 : Location_t：超时时间
-*返回				   ：无
+*参数				: Location_t：超时时间
+*返回				：无
 */
 void LocationCheckGps(LocationIn_t Locat)
 {
@@ -352,10 +439,10 @@ Locatmode_t LocationGetMode( void )
 
 /*
 *memcpy1：	数据拷贝
-*dst：			拷贝目标
-*src:				拷贝源地址
-*size:			数据大小
-*返回：			无
+*dst：		拷贝目标
+*src:			拷贝源地址
+*size:		数据大小
+*返回：		无
 */
 void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size )
 {

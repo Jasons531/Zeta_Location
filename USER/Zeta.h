@@ -15,6 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32l0xx_hal.h"
 
 #define  ZETAINT_IO						GPIOB
@@ -84,7 +85,8 @@ typedef struct uZeta
 	uint8_t			Buf[50];
 	uint8_t			RevBuf[10];
 	uint32_t    Uart_time;
-	ZetaState_t States;
+	ZetaState_t States;	
+	bool				Ack;
 }Zeta_t;
 
 /*

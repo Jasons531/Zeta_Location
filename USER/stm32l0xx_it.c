@@ -41,12 +41,8 @@
 #include "stm32l0xx_hal.h"
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
-#include "rtc-board.h"
-#include "timer-board.h"
-#include "Location.h"
-#include "usart.h"
-#include "wwdg.h"
-#include "gps.h"
+#include "board.h"
+
 
 /** @addtogroup STM32L0xx_HAL_Examples
   * @{
@@ -155,39 +151,15 @@ void TIM2_IRQHandler(void)
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	Timer2_Counter++;
+{	
+	DEBUG(3,"%s\r\n",__func__);
 	
-	if(Timer2_Counter>50)//20ms/´Î
+	if( LocatHandles->BreakState(  ) == PATIONNULL )
 	{
-		DEBUG(3,"%s\r\n",__func__);
-		
-		if( LocatHandles->BreakState(  ) == PATIONNULL )
-		{
-			LocatHandles->CheckGps( LocationInfor );
-		}
-		
-		Timer2_Counter = 0;
+		LocatHandles->CheckGps( LocationInfor );
 	}
 	
-	if(MotionMode == LocatHandles->GetMode(  )) 
-	{
-		if(HAL_GetTick(  )- LocationInfor.CollectMoveStopTime > LocationInfor.StopTimes * 1000)
-		{
-			LocatHandles->SetMode( MotionStopMode );
-
-			LocationInfor.MotionState = StopActive;
-			DEBUG_APP(2,);
-		}
-	}	
-	else if(WaitMode == LocatHandles->GetMode(  )) 
-	{
-		if(HAL_GetTick(  )- LocationInfor.CollectMoveStopTime > LocationInfor.StopTimes * 1000)
-		{		
-			DEBUG_APP(2,);
-			LocationInfor.MotionState = FailActive;
-		}		
-	}
+	UserLocatDetect(  );
 }
 
 /**
@@ -213,22 +185,26 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 	 // PWR_FLAG_WU indicates the Alarm has waken-up the MCU
 	if( __HAL_PWR_GET_FLAG( PWR_FLAG_WU ) != RESET )
 	{
-			__HAL_PWR_CLEAR_FLAG( PWR_FLAG_WU );
+		__HAL_PWR_CLEAR_FLAG( PWR_FLAG_WU );
 	}
 	
 	 // check the clk source and set to full speed if we are coming from sleep mode
-	if( ( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_HSE ) ||
+	if( ( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_HSI ) ||
 			( __HAL_RCC_GET_SYSCLK_SOURCE( ) == RCC_SYSCLKSOURCE_STATUS_MSI ) )
 	{		
+		McuInitialized = false;
+		RtcHandle.State = HAL_RTC_STATE_RESET;
 		BoardInitClock(  );
 		
 		BoardInitMcu(  );
 		
-		if(HeartMode == LocatHandles->GetMode(  ))
-		{
-			LocatHandles->SetState(PATIONNULL);	
-			UserCheckGps(  );
-		}
+		User.SleepWakeUp = false;
+		
+		LocationInfor.HeartArrive = true;
+				
+		LocatHandles->SetState(PATIONNULL);			
+		
+		UserCheckGps(  );
 		
 		DEBUG(2,"wkup low-power now\r\n");
 	}
@@ -258,7 +234,7 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 0 */
 
   /* USER CODE END USART2_IRQn 0 */
-   HAL_UART_IRQHandler(&huart1);
+  HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART2_IRQn 1 */
 	uint32_t timeout = 0;
 
