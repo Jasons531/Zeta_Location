@@ -19,7 +19,7 @@
 #include "stm32l0xx_hal.h"
 #include "zeta.h"
 
-#define 	VERSIOS										0x23
+#define 	VERSIOS										0x24
 #define	MSEC											1000
 #define	MINUTE										60
 #define 	HOUR											60

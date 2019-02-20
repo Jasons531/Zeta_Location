@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "gps.h"
 
-LocationIn_t LocationInfor = {false, false, false, false, false, VERSIOS, 12*HOUR, 5, 0x68, 3, 0.5*MINUTE, 5, 5, 1, HeartMode, InvalidActive, 0, 0}; //30-2*MINUTE 12*HOUR
+LocationIn_t LocationInfor = {false, false, false, false, false, VERSIOS, 12*HOUR, 5, 0x68, 3, 2*MINUTE, 5, 5, 1, HeartMode, InvalidActive, 0, 0}; //30-2*MINUTE 12*HOUR
 
 LocatH_t 	LocatHandle;
 
@@ -87,7 +87,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 			if(LocationInfor.AlarmCycle == 0)
 			{
-				AlarmCycle = 0xffee;
+				AlarmCycle = 0x55aa;
 			}
 			else
 			{
@@ -101,7 +101,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 		case ALARM_CHECK_CYCLE: ///²éÑ¯¸æ¾¯
 			
-			if(FlashRead16(ALARM_CYCLE_ADDR) == 0xffee)
+			if(FlashRead16(ALARM_CYCLE_ADDR) == 0x55aa)
 			{
 				LocationInfor.AlarmCycle = 0;
 			}

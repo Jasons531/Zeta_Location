@@ -194,7 +194,7 @@ void UserLocatMotion(void)
 					
 			LocationInfor.MotionHandle = true;	
 				
-			if(0xffee == FlashRead32(ALARM_CYCLE_ADDR))
+			if(0x55aa == FlashRead32(ALARM_CYCLE_ADDR))
 			{
 				LocationInfor.AlarmCycle = 0;
 			}
@@ -831,7 +831,7 @@ void UserReadFlash(void)
 
 	if(FlashRead16(ALARM_CYCLE_ADDR)==0x00||FlashRead16(ALARM_CYCLE_ADDR)==0xffff)
 	{
-		if(FlashRead16(ALARM_CYCLE_ADDR) != 0xffee)
+		if(FlashRead16(ALARM_CYCLE_ADDR) != 0x55aa)
 		{
 			FlashWrite16(ALARM_CYCLE_ADDR, (uint16_t *)&LocationInfor.AlarmCycle,1);
 		}			
@@ -885,7 +885,7 @@ void UserReadFlash(void)
 	 
 	User.SleepTime = FlashRead16(HEART_CYCLE_ADDR);
 		
-	if(FlashRead16(ALARM_CYCLE_ADDR) == 0xffee)
+	if(FlashRead16(ALARM_CYCLE_ADDR) == 0x55aa)
 	{
 		LocationInfor.AlarmCycle 	= 0;
 	}
