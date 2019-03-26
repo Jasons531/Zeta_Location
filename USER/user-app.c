@@ -79,16 +79,15 @@ void UserKeyWakeupHandle(void)
 }
 
 /*UserCheckGps：	用户查询GPS信息
-*参数：						无
-*返回值：   			无
+*参数：				无
+*返回值：   		无
 */
 void UserCheckGps(void)
 {						
-	if(PATIONNULL == LocatHandles->BreakState(  ))
+	if(PATIONNULL == LocatHandles->BreakState(  ) || PATIONINIT == LocatHandles->BreakState(  ))
 	{
-		Gps.Init(  );
-		
-		DEBUG_APP(2,"*** Now Start positioning ***"); 
+		Gps.Init(  );		
+		DEBUG_APP(2,"*** start timer ***");	
 		Gps.Set(  );
 	}
 }
@@ -99,7 +98,7 @@ void UserCheckGps(void)
 */
 void UserLocationVerion(uint8_t VerCmd)
 {
-	uint8_t Len 			 = 4;
+	uint8_t Len 		 = 4;
 	ZetaSendBuf.Buf[0] = 0xff;
 	ZetaSendBuf.Buf[1] = 0x00;
 	
@@ -126,7 +125,7 @@ void UserLocationVerion(uint8_t VerCmd)
 */
 void UserSendLocation(uint8_t LocationCmd)
 {
-	uint8_t Len						= 4;
+	uint8_t Len					= 4;
 	
 	memset(ZetaSendBuf.Buf, 0, 20);
 	
@@ -153,8 +152,8 @@ void UserSendLocation(uint8_t LocationCmd)
 		ZetaSendBuf.Buf[8] 	= 0x00;
 		
 		ZetaSendBuf.Buf[9]	= 0x00;
-		ZetaSendBuf.Buf[10] = 0x00;
-		ZetaSendBuf.Buf[11] = 0x00;
+		ZetaSendBuf.Buf[10] 	= 0x00;
+		ZetaSendBuf.Buf[11] 	= 0x00;
 				
 		ZetaSendBuf.Buf[2] 	= Len + 8; ///5
 	}
@@ -177,6 +176,8 @@ int32_t CurrentSleepTime = 0;
 */
 void UserLocatMotion(void)
 {
+	uint16_t AlarmCycle = 0;
+	
 	if(LocationInfor.AlarmEnable && !LocationInfor.SingleAlarm)
 	{		
 		DEBUG_APP(3,"LocationInfor.SingleAlarm = %d MotionState = %d",LocationInfor.SingleAlarm, LocationInfor.MotionState);
@@ -193,14 +194,16 @@ void UserLocatMotion(void)
 			UserSendLocation(ALARM_REP_LOCA_SUCESS);
 					
 			LocationInfor.MotionHandle = true;	
+			
+			AlarmCycle = FlashRead32(ALARM_CYCLE_ADDR);
 				
-			if(0x55aa == FlashRead32(ALARM_CYCLE_ADDR))
+			if(0x55aa == AlarmCycle)
 			{
 				LocationInfor.AlarmCycle = 0;
 			}
 			else
 			{
-				LocationInfor.AlarmCycle = FlashRead32(ALARM_CYCLE_ADDR);
+				LocationInfor.AlarmCycle = AlarmCycle;
 			}		
 			
 			DEBUG_APP(2,"LocationInfor.AlarmCycle = %d",LocationInfor.AlarmCycle);
@@ -231,8 +234,8 @@ void UserLocatMotion(void)
 }
 
 /*UserLocatMotionStop	：用户处理定位器停止信息
-*参数									：无
-*返回值								：无
+*参数							：无
+*返回值						：无
 */
 void UserLocatMotionStop(void)
 {	
@@ -244,7 +247,7 @@ void UserLocatMotionStop(void)
 		
 		LocationInfor.SingleAlarm  = false;
 		LocationInfor.MotionHandle = false;
-
+		
 		LocatHandles->SetState(PATIONNULL);	
 
 		UserCheckGps(  );
@@ -253,12 +256,22 @@ void UserLocatMotionStop(void)
 
 		UserSendLocation(MOVE_STATIC_LOCA_SUCESS); ///自动停止、命令停止，当前为自动停止模式
 		LocatHandles->SetMode( WaitMode );
-	}			
+	}		
+	else if(MultActive == LocationInfor.MotionState || SingleActive == LocationInfor.MotionState)
+	{
+		LocatHandles->SetMode( MotionMode );
+		DEBUG_ERROR(2,"**** Protect MotionMode****");
+	}
+	else
+	{
+		LocatHandles->SetMode( WaitMode );
+		DEBUG_ERROR(2,"**** Protect WaitMode****");
+	}
 }
 
 /*UserLocatDetect			：侦听触发侦听
-*参数									：无
-*返回值								：无
+*参数							：无
+*返回值						：无
 */
 void UserLocatDetect(void)
 {
@@ -279,7 +292,7 @@ void UserLocatDetect(void)
 				LocatHandles->SetMode( MotionStopMode );
 
 				LocationInfor.MotionState = StopActive;
-				DEBUG_APP(2,"*** TimeOut:%d ***",TimeOut/1000);
+				DEBUG_APP(2,"*** StopTimeOut:%d ***",TimeOut/1000);
 				
 				return;
 			}
@@ -290,7 +303,7 @@ void UserLocatDetect(void)
 				DEBUG_APP(2,"*** CollectMoveStopTime:%d ***",(HAL_GetTick(  ) - LocationInfor.CollectMoveStopTime)/1000);
 				LocatHandles->SetMode( HeartMode );	
 				
-				LocatHandles->SetState( PATIONNULL );	
+				LocatHandles->SetState( PATIONNULL );
 				
 				return;
 			}
@@ -308,6 +321,7 @@ void UserLocatDetect(void)
 					
 					LocationInfor.MotionStart = false;
 					
+					DEBUG_APP(2,"*** LocationInfor.MotionStart:%d ***",LocationInfor.MotionStart);
 					if(InvalidActive == LocationInfor.MotionState)
 					{
 						DEBUG_APP(2,"*** Protect TimeOut:%d ***",2);
@@ -369,6 +383,7 @@ void UserLocatReport(void)
 				
 				CurrentSleepTime = GetCurrentSleepRtc(  );
 							
+				DEBUG_APP(2,"*** LocationInfor.MotionStart:%d ***",LocationInfor.MotionStart);
 				DEBUG_APP(2,"---- Sleep Again ----");					
 				
 				if(CurrentSleepTime > 0)
@@ -388,7 +403,6 @@ void UserLocatReport(void)
 					else if(User.AlarmDate == User.CurrentDate)//休眠时间到达
 					{					
 						LocatHandles->SetState(PATIONNULL);
-						UserCheckGps(  );
 						LocatHandles->SetMode( HeartMode );	
 						break;
 					}
@@ -399,12 +413,10 @@ void UserLocatReport(void)
 		
 		case	HeartMode:
 					
-//			UserCheckGps(  );
+			UserCheckGps(  );
 		
 			DEBUG_APP(2,"---- HeartMode ----");
-			
-			HAL_TIM_Base_Start_IT(&htim2);
-			
+						
 			LocationInfor.HeartArrive = false;
 					
 			while(PATIONNULL == LocatHandles->BreakState(  ));
@@ -435,6 +447,8 @@ void UserLocatReport(void)
 			HAL_TIM_Base_Stop_IT(&htim2);
 			
 			LocationInfor.MotionStart = false;
+			
+			DEBUG_APP(2,"*** LocationInfor.MotionStart:%d ***",LocationInfor.MotionStart);
 			
 			LocatHandles->SetMode( WaitMode );
 			LocationInfor.MotionState = InvalidActive;
@@ -467,6 +481,8 @@ void UserLocatReport(void)
 			while(PATIONNULL == LocatHandles->BreakState(  ));
 	
 			UserSendLocation(QUERY_FEED_LOCA_SUCESS);
+		
+			HAL_TIM_Base_Stop_IT(&htim2);
 		
 			DEBUG_APP(2, "LocationInfor.MotionState = %d\r\n",LocationInfor.MotionState);
 			
@@ -884,14 +900,16 @@ void UserReadFlash(void)
 	}	
 	 
 	User.SleepTime = FlashRead16(HEART_CYCLE_ADDR);
-		
-	if(FlashRead16(ALARM_CYCLE_ADDR) == 0x55aa)
+	
+	uint16_t AlarmCycle = FlashRead16(ALARM_CYCLE_ADDR) ;
+	
+	if(AlarmCycle == 0x55aa)
 	{
 		LocationInfor.AlarmCycle 	= 0;
 	}
 	else
 	{
-		LocationInfor.AlarmCycle 	= FlashRead16(ALARM_CYCLE_ADDR);
+		LocationInfor.AlarmCycle 	= AlarmCycle;
 	}
 	
 	LocationInfor.Mma8452DaRte 	=	FlashRead16(MMA8452_DATA_RATE);

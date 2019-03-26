@@ -21,12 +21,12 @@
 #define 	RTCTIKE	 
 
 extern UART_HandleTypeDef 			UartHandle;
-extern RTC_HandleTypeDef 				RtcHandle;
+extern RTC_HandleTypeDef 			RtcHandle;
 
 
 
 /*******************************************************************************************************************
-  * @函数名称		main
+  * @函数名称	 main
   * @函数说明   主函数 
   * @输入参数   无
   * @输出参数   无
@@ -37,40 +37,40 @@ extern RTC_HandleTypeDef 				RtcHandle;
 int main(void)
 {			
 	/**************时钟初始化************/
-   BoardInitClock(  );
-	
-	 DEBUG(2,"TIME : %s  DATE : %s\r\n",__TIME__, __DATE__); 	 
-   
+	BoardInitClock(  );
+
+	DEBUG(2,"TIME : %s  DATE : %s\r\n",__TIME__, __DATE__); 	 
+
 	/**************定位器初始化************/
-   LocationInit(  );
+	LocationInit(  );
 
 	/**************读取FLASH************/
-   UserReadFlash(  );
-	
+	UserReadFlash(  );
+
 	/**************电源开关初始化************/
-	 UserKeyPinInit(  );
-		
+	UserKeyPinInit(  );
+
 	/**************电源开关处理************/
-	 UserKeyWakeupHandle(  );	
-		
-	 UserCheckGps(  );
-											 	 						
-	 UserCheckCmd(&UserZetaCheck[MAC]);
+	UserKeyWakeupHandle(  );	
 
-	 UserCheckCmd(&UserZetaCheck[COUNTER]);
-	
-	 UserCheckCmd(&UserZetaCheck[RSSI]);
+	UserCheckGps(  );
+																
+	UserCheckCmd(&UserZetaCheck[MAC]);
 
-	 UserSetHeart(0x00);
+	UserCheckCmd(&UserZetaCheck[COUNTER]);
 
-	 UserLocationVerion( QUERY_SEND_VER );
-	 
-	 ///通讯建立后再开启加速度传感器中断识别
-	 HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
-	 
-	 LocationInfor.HeartArrive = true;
-	  
-	 DEBUG_APP(2,"Battery = %d", CheckBattery(  ));
+	UserCheckCmd(&UserZetaCheck[RSSI]);
+
+	UserSetHeart(0x00);
+
+	UserLocationVerion( QUERY_SEND_VER );
+
+	///通讯建立后再开启加速度传感器中断识别
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+	LocationInfor.HeartArrive = true;
+
+	DEBUG_APP(2,"Battery = %d", CheckBattery(  ));
 	 
 	while (1)
    {			 

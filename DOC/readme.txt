@@ -3,6 +3,10 @@
 
 版本说明：
 
+【V1.6.5】：ZETA-Location-V1.6
+功能：
+【1】：增加单次上报切换为多次告警上报模式
+
 【V1.6.3】：ZETA-Location-V1.6
 功能：
 【1】：增加更改加速度传感器灵敏度指令
@@ -154,6 +158,10 @@ ff 00 04 01
 
 
 Program Size: Code=29780 RO-data=940 RW-data=320 ZI-data=3968  
+
+
+LocatHandles->SetMode( MotionStopMode );
+
 
 
 

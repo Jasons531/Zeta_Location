@@ -8,10 +8,10 @@
 
 
 #define MTK_COULD				"$PMTK103*30\r\n"
-#define MTK_HOST       	"$PMTK101*32\r\n"
+#define MTK_HOST       		"$PMTK101*32\r\n"
 
 #define MTK_POS_FIX			"$PMTK220,1000*1F\r\n" //  $PMTK220,3000*1D
-#define MTK_GLL					"$PMTK314,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0*28\r\n"
+#define MTK_GLL				"$PMTK314,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0*28\r\n"
 
 SetGpsMode_t SetGpsMode = {false, false, false, false, false, false, PATIONNULL, 0, 0, 0};
 
@@ -19,6 +19,10 @@ const Gps_t Gps = {GpsInit, GpsEnable, GpsDisable, GpsSet, GpsGetPositionAgain};
 
 nmea_msg gpsx; 											//GPS信息
 
+/*
+*GpsInit: GPS初始化
+*返回：   无
+*/
 void GpsInit(void)
 {	
 	GPIO_InitTypeDef GPIO_Initure;
@@ -36,14 +40,22 @@ void GpsInit(void)
 	SetGpsMode.Gpll = false;
 }
 
+/*
+*GpsEnable: GPS使能
+*返回：   	无
+*/
 void GpsEnable(void)
 {
 	HAL_GPIO_WritePin(GPS_IO,GPS_Power_ON,GPIO_PIN_SET);
 }
 
+/*
+*GpsDisable: GPS失能
+*返回：   	 无
+*/
 void GpsDisable(void)
 {
-  GPIO_InitTypeDef GPIO_Initure;
+	GPIO_InitTypeDef GPIO_Initure;
 	__HAL_RCC_GPIOB_CLK_ENABLE();           //开启GPIOB时钟
 
 	GPIO_Initure.Pin=GPS_Power_ON;  
@@ -61,63 +73,63 @@ void GpsDisable(void)
 *返回：  成功：1  失败：0
 */
 uint8_t GpsSet(void)
-{
-	Gps.Enable( );  
+{ 
 	uint32_t GPS_TIME = 0;
 	
-	do
-	{	
-		HAL_NVIC_DisableIRQ(USART2_IRQn);
-		HAL_UART_Transmit(&huart2, (uint8_t *)MTK_HOST, sizeof(MTK_HOST), 0xFFFFFFFF);
-		HAL_NVIC_EnableIRQ(USART2_IRQn);
-		
-		DEBUG_APP(2,);
-		HAL_Delay(1000);	
-    GPS_TIME ++;
-		DEBUG_APP(2,);
-	}
-	while(!SetGpsMode.Start && ( GPS_TIME <= 10 ));
-    
-	if(!SetGpsMode.Start && ( GPS_TIME > 10 ))
-	{
-		DEBUG_ERROR(2,"Hardware_Exist_GPS ERROR\r\n");
-		return 0;
-	}
+	Gps.Enable( ); 
+	HAL_TIM_Base_Start_IT(&htim2);
 	
-	if(SetGpsMode.Start)
+	if(PATIONINIT == LocatHandles->BreakState(  ))
 	{
 		do
-		{
+		{	
 			HAL_NVIC_DisableIRQ(USART2_IRQn);
-			HAL_UART_Transmit(&huart2, (uint8_t *)MTK_GLL, sizeof(MTK_GLL), 0xFFFFFFFF);
-			HAL_NVIC_EnableIRQ(USART2_IRQn);		
-			HAL_Delay(200);	
-			DEBUG(3,"line = %d\r\n",__LINE__);
-		}while(!SetGpsMode.Gpll);
-				
-		return 1;
+			HAL_UART_Transmit(&huart2, (uint8_t *)MTK_HOST, sizeof(MTK_HOST), 0xFFFFFFFF);
+			HAL_NVIC_EnableIRQ(USART2_IRQn);
+			
+			DEBUG_APP(2,);
+			HAL_Delay(1000);	
+			GPS_TIME ++;
+			DEBUG_APP(2,);
+		}
+		while(!SetGpsMode.Start && ( GPS_TIME <= 10 ));
+    
+		if(!SetGpsMode.Start && ( GPS_TIME > 10 ))
+		{
+			DEBUG_ERROR(2,"Hardware_Exist_GPS ERROR\r\n");
+			return 0;
+		}
 	}
 	
-	return 0;
+	do
+	{
+		HAL_NVIC_DisableIRQ(USART2_IRQn);
+		HAL_UART_Transmit(&huart2, (uint8_t *)MTK_GLL, sizeof(MTK_GLL), 0xFFFFFFFF);
+		HAL_NVIC_EnableIRQ(USART2_IRQn);		
+		HAL_Delay(200);	
+		DEBUG(3,"line = %d\r\n",__LINE__);
+	}while(!SetGpsMode.Gpll);
+			
+	return 1;
 }
 
 
 /*
 *GpsGetPositionAgain: GPS再次定位
-*返回：					 			成功：1  失败：0
+*返回：					 成功：1  失败：0
 */
 void GpsGetPositionAgain(void)
 {
-		DEBUG_APP(2,"%s",__func__);
-	
-		SetGpsMode.Start = false;
-		SetGpsMode.Gpll	= false;      
-	
-		Gps.Init(  );
-		
-		HAL_TIM_Base_Start_IT(&htim2);
+	DEBUG_APP(2,"%s",__func__);
 
-		Gps.Set(  );	
+	SetGpsMode.Start = false;
+	SetGpsMode.Gpll	= false;      
+
+	Gps.Init(  );
+	
+	HAL_TIM_Base_Start_IT(&htim2);
+
+	Gps.Set(  );	
 }
 
 const uint32_t BAUD_id[9]={4800,9600,19200,38400,57600,115200,230400,460800,921600};//模块支持波特率数组

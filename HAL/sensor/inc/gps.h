@@ -4,9 +4,7 @@
 #include <stdint.h>
 #include "timer.h"
 
-#define   GPSWORKTIME			  60e3  ///864e5  == 24H  GPS再次定位时间间隔
-#define 	GPSLEN						11
-
+#define		PATIONINIT				0x00		///GPS初始化
 #define		PATIONDONE				0x01   ///GPS定位成功
 #define		PATIONFAIL				0x02   ///GPS定位失败
 #define		PATIONNULL				0x03  ///GPS默认状态
@@ -17,10 +15,9 @@ typedef struct
 	bool 			Start;
 	bool 			Gpll;
 	bool 			Posfix;
-	bool      South;
-	bool      West;
-//	char 			GLL[54];
-	uint8_t 	LocationState;
+	bool      	South;
+	bool      	West;
+	uint8_t 		LocationState;
 	uint32_t 	GpsOverTime;
 	uint32_t 	NorthSpend;
 	uint32_t 	EastSpend;
@@ -32,7 +29,7 @@ typedef struct u_gps
 	void 			(*Enable)(void);
 	void 			(*Disable)(void);
 	uint8_t		(*Set)(void);
-	void      (*GetPositionAgain)(void);
+	void     	(*GetPositionAgain)(void);
 }Gps_t;
 
 extern SetGpsMode_t SetGpsMode;

@@ -16,7 +16,7 @@
 
 LocationIn_t LocationInfor = {false, false, false, false, false, VERSIOS, 12*HOUR, 5, 0x68, 3, 2*MINUTE, 5, 5, 1, HeartMode, InvalidActive, 0, 0}; //30-2*MINUTE 12*HOUR
 
-LocatH_t 	LocatHandle;
+LocatH_t 	 LocatHandle;
 
 LocatH_t 	*LocatHandles;
 
@@ -53,6 +53,8 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 	
 	uint16_t Sqrtdata = 0;
 	
+	uint16_t AlarmCycle = 0;
+	
 	ZetaSendBuf.Len = 0;
 		
 	HeartBuf[ZetaSendBuf.Len++] = ZRev->RevBuf[0];
@@ -82,9 +84,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		case ALARM_SET_CYCLE:	///设置告警周期
 			LocationInfor.AlarmCycle  = ZRev->RevBuf[ZetaSendBuf.Len++];
 			HeartBuf[ZetaSendBuf.Len] = LocationInfor.AlarmCycle;
-		
-			uint16_t AlarmCycle = 0;
-		
+				
 			if(LocationInfor.AlarmCycle == 0)
 			{
 				AlarmCycle = 0x55aa;
@@ -92,6 +92,15 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 			else
 			{
 				AlarmCycle = LocationInfor.AlarmCycle;
+
+#if 0				
+				///单次上报切换为多次上报
+				if(LocationInfor.SingleAlarm) 
+				{
+					LocationInfor.SingleAlarm = false;
+					LocationInfor.MotionState = MultActive;
+				}
+#endif
 			}
 			
 			///保存flash
@@ -101,14 +110,16 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 		case ALARM_CHECK_CYCLE: ///查询告警
 			
-			if(FlashRead16(ALARM_CYCLE_ADDR) == 0x55aa)
+			AlarmCycle = FlashRead16(ALARM_CYCLE_ADDR);
+	
+			if(AlarmCycle == 0x55aa)
 			{
-				LocationInfor.AlarmCycle = 0;
+				LocationInfor.AlarmCycle 	= 0;
 			}
 			else
-			{			
-				LocationInfor.AlarmCycle = FlashRead16(ALARM_CYCLE_ADDR);
-			}				
+			{
+				LocationInfor.AlarmCycle 	= AlarmCycle;
+			}	
 
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.AlarmCycle >> 0)&0xff;
 		
@@ -118,8 +129,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 			LocationInfor.GpsTime = ZRev->RevBuf[ZetaSendBuf.Len++] << 8;
 			LocationInfor.GpsTime |= ZRev->RevBuf[ZetaSendBuf.Len++] << 0;	
 			
-			DEBUG_APP(2,"LocationInfor.GpsTime = %04X %02X %02X\r\n",LocationInfor.GpsTime, HeartBuf[1],HeartBuf[2]);
-			
+			DEBUG_APP(2,"LocationInfor.GpsTime = %04X %02X %02X\r\n",LocationInfor.GpsTime, HeartBuf[1],HeartBuf[2]);		
 			///保存flash
 			FlashWrite16(GPS_LOCA_TIME_ADDR,&LocationInfor.GpsTime,1);	
 			
@@ -129,8 +139,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 			LocationInfor.GpsTime = FlashRead16(GPS_LOCA_TIME_ADDR);
 			
 			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.GpsTime >> 8)&0xff;
-			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.GpsTime >> 0)&0xff;
-			
+			HeartBuf[ZetaSendBuf.Len++] = (LocationInfor.GpsTime >> 0)&0xff;			
 			DEBUG_APP(2,"LocationInfor.GpsTime = %04X %02X %02X\r\n",LocationInfor.GpsTime, HeartBuf[1],HeartBuf[2]);
 			
 		break;
@@ -140,8 +149,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 			HeartBuf[ZetaSendBuf.Len] 	= LocationInfor.MoveTimes;
 			
 			///保存flash
-			FlashWrite16(MOVE_CONDITION_ADDR,(uint16_t *)&LocationInfor.MoveTimes,1);	
-		
+			FlashWrite16(MOVE_CONDITION_ADDR,(uint16_t *)&LocationInfor.MoveTimes,1);		
 			DEBUG_APP(2,"LocationInfor.MoveTimes = %d\r\n",LocationInfor.MoveTimes);
 			
 		break;
@@ -149,8 +157,7 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		case MOVE_CHECK_MOVE_CONDITION:
 			LocationInfor.MoveTimes 	 = FlashRead16(MOVE_CONDITION_ADDR);
 
-			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.MoveTimes;
-		
+			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.MoveTimes;	
 			DEBUG_APP(2,"LocationInfor.MoveTimes = %d\r\n",LocationInfor.MoveTimes);
 		
 		break;
@@ -161,7 +168,6 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 			///保存flash
 			FlashWrite16(MOVE_STOP_CONDITION_ADDR,(uint16_t *)&LocationInfor.StopTimes,1);
-		
 			DEBUG_APP(2,"LocationInfor.StopTimes = %d\r\n",LocationInfor.StopTimes);
 	
 		break;
@@ -186,7 +192,6 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 		case MOVE_CHECK_MOVE_ENABLE:
 			LocationInfor.AlarmEnable 	 = FlashRead16(MOVE_ENABLE_ADDR);		
-
 			HeartBuf[ZetaSendBuf.Len++] = LocationInfor.AlarmEnable;
 	
 		break;
@@ -284,7 +289,12 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 		
 			LocationInfor.HeartCycle 	 = FlashRead16(HEART_CYCLE_ADDR);
 
-			LocationInfor.AlarmCycle 	 = FlashRead16(ALARM_CYCLE_ADDR);
+			if(0x55aa == FlashRead16(ALARM_CYCLE_ADDR))
+			{
+				LocationInfor.AlarmCycle = 0;
+			}
+			else
+				LocationInfor.AlarmCycle 	 = FlashRead16(ALARM_CYCLE_ADDR);
 			
 			LocationInfor.AlarmEnable 	 = FlashRead16(MOVE_ENABLE_ADDR);		
 			

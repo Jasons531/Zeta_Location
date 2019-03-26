@@ -204,8 +204,6 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 				
 		LocatHandles->SetState(PATIONNULL);			
 		
-		UserCheckGps(  );
-		
 		DEBUG(2,"wkup low-power now\r\n");
 	}
 }

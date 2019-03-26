@@ -56,10 +56,10 @@
 
 /**********************下行命令：start*********************//*
 ************设置心跳周期 ：分钟************/
-#define 	HEART_SET_CYCLE							0x40
+#define 		HEART_SET_CYCLE						0x40
 
 /************查询心跳周期 ：分钟************/
-#define 	HEART_CHECK_CYCLE							0x41
+#define 		HEART_CHECK_CYCLE						0x41
 
 /************设置告警周期************/
 #define		ALARM_SET_CYCLE						0x42
@@ -113,7 +113,7 @@ typedef enum Locatmode_s
 	WaitMode				= 0,
 	
 	/*********心跳模式********/
-	HeartMode				= 1,
+	HeartMode			= 1,
 	
 	/*********运动模式********/
 	MotionMode			= 2,
@@ -201,7 +201,7 @@ typedef struct LocatH_s
 {
 	char 					Buf[128];
 	
-	uint8_t 			*(*Cmd)( Zeta_t *ZRev );
+	uint8_t 				*(*Cmd)( Zeta_t *ZRev );
 
 	uint8_t	 			*(*GetLoca)( char *GpsLocation, uint8_t LocationCmd );
 
@@ -209,37 +209,37 @@ typedef struct LocatH_s
 
 	void 					(*SetState)( uint8_t State );
 
-	uint8_t 			(*BreakState)( void ); 
+	uint8_t 				(*BreakState)( void ); 
 
 	void 					(*SetMode)(	Locatmode_t Mode );
 	
-	Locatmode_t		(*GetMode)( void );
+	Locatmode_t			(*GetMode)( void );
 	
 }LocatH_t;
 
 extern 	LocationIn_t 	LocationInfor;
 
-extern 	LocatH_t 			LocatHandle;
+extern 	LocatH_t 		LocatHandle;
 
-extern 	LocatH_t 			*LocatHandles;
+extern 	LocatH_t 		*LocatHandles;
 
-extern	void 					LocationInit( void );
+extern	void 				LocationInit( void );
 
 extern 	uint8_t 			*LocationCmd( Zeta_t *ZRev );
 
-extern 	uint8_t				*GetLocation( char *GpsLocation, uint8_t LocationCmd );
+extern 	uint8_t			*GetLocation( char *GpsLocation, uint8_t LocationCmd );
 
-extern 	void					LocationCheckGps( LocationIn_t Locat );
+extern 	void				LocationCheckGps( LocationIn_t Locat );
 
-extern 	void 					LocationSetState( uint8_t State );
+extern 	void 				LocationSetState( uint8_t State );
 
 extern 	uint8_t 			LocationBreakState( void );
 
-extern 	void 					LocationSetMode( Locatmode_t Mode );
+extern 	void 				LocationSetMode( Locatmode_t Mode );
 
 extern 	Locatmode_t 	LocationGetMode( void );
 
-extern	void 					memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
+extern	void 				memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
 
 
 
