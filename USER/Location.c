@@ -92,15 +92,6 @@ uint8_t *LocationCmd(Zeta_t *ZRev)
 			else
 			{
 				AlarmCycle = LocationInfor.AlarmCycle;
-
-#if 0				
-				///单次上报切换为多次上报
-				if(LocationInfor.SingleAlarm) 
-				{
-					LocationInfor.SingleAlarm = false;
-					LocationInfor.MotionState = MultActive;
-				}
-#endif
 			}
 			
 			///保存flash

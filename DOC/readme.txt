@@ -3,9 +3,9 @@
 
 版本说明：
 
-【V1.6.5】：ZETA-Location-V1.6
+【V1.6.4】：ZETA-Location-V1.6
 功能：
-【1】：增加单次上报切换为多次告警上报模式
+【1】：更改GPS定位模式
 
 【V1.6.3】：ZETA-Location-V1.6
 功能：
